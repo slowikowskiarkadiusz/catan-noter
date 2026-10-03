@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#111111">
 <title>Catan rzuty</title>
+<script>
+  try { document.documentElement.dataset.theme = localStorage.getItem('catan-noter-theme') || 'catan'; }
+  catch (e) { document.documentElement.dataset.theme = 'catan'; }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=EB+Garamond:wght@500;700&display=swap" rel="stylesheet">
@@ -98,9 +102,78 @@
   #modal h3 { margin: 6px 0 16px; font-size: 22px; }
   #modal .actions { display: flex; gap: 8px; }
   #modal .actions .btn { flex: 1; padding: 12px 4px; font-size: 16px; margin: 0; width: auto; }
+
+  /* burger + menu */
+  #topbar { padding: 8px 0 0; }
+  #burger { background: none; border: 0; color: var(--parch); font-size: 28px; line-height: 1; padding: 4px 8px 4px 0; }
+  #scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
+  #drawer {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 78%; max-width: 300px; z-index: 21;
+    background: var(--wood2); color: var(--parch); border-right: 3px solid #1e130a;
+    padding: calc(env(safe-area-inset-top) + 16px) 16px 16px; transform: translateX(-105%); transition: transform .2s;
+  }
+  #drawer.open { transform: none; }
+  #drawer h2 { margin: 0 0 14px; }
+  #themeBtn { width: 100%; text-align: left; display: flex; justify-content: space-between; }
+  #themeList { margin-top: 6px; border: 2px solid #1e130a; border-radius: 8px; overflow: hidden; }
+  #themeList button { display: block; width: 100%; text-align: left; padding: 12px 14px; font: inherit; font-size: 16px; background: var(--parch2); color: var(--ink); border: 0; border-bottom: 1px solid #cdb784; }
+  #themeList button:last-child { border-bottom: 0; }
+  #themeList button.sel { background: var(--green); color: #fff; font-weight: bold; }
+
+  /* motyw nowoczesny */
+  html[data-theme="modern"] { --head: -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] body { background: #111; color: #eee; font: 16px -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] h1, html[data-theme="modern"] #setup > div[style] { display: none; }
+  html[data-theme="modern"] h2 { color: #eee; letter-spacing: 0; font-weight: 600; }
+  html[data-theme="modern"] small { color: #999; }
+  html[data-theme="modern"] #burger { color: #eee; }
+  html[data-theme="modern"] header .info { color: #999; font-weight: normal; }
+  html[data-theme="modern"] .btn { background: #333; color: #eee; border: 0; box-shadow: none; font-size: 16px; }
+  html[data-theme="modern"] .btn:active { transform: none; }
+  html[data-theme="modern"] .btn.danger { background: #5a2420; }
+  html[data-theme="modern"] .btn.primary { background: #2f6fd0; font-weight: 600; }
+  html[data-theme="modern"] .panel { background: none; color: #eee; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+  html[data-theme="modern"] .panel h2 { color: #eee; }
+  html[data-theme="modern"] #setup input[type=text] { background: #222; color: #eee; border: 1px solid #444; }
+  html[data-theme="modern"] .nameRow .dot, html[data-theme="modern"] #players button::before, html[data-theme="modern"] #history td.pl::before { display: none; }
+  html[data-theme="modern"] .nameRow input[type=radio] { accent-color: #2f6fd0; }
+  html[data-theme="modern"] .radios span { background: #2a2a2a; color: #eee; border: 0; }
+  html[data-theme="modern"] .radios input:checked + span { background: #2f6fd0; color: #fff; font-weight: 600; }
+  html[data-theme="modern"] #players button { background: #2a2a2a; color: #aaa; border: 0; }
+  html[data-theme="modern"] #players button.cur { background: #2f6fd0; color: #fff; box-shadow: none; font-weight: 600; }
+  html[data-theme="modern"] .pad { gap: 8px; justify-items: stretch; }
+  html[data-theme="modern"] .pad button { max-width: none; aspect-ratio: auto; height: 64px; border: 0; border-radius: 12px; background: #2a2a2a; color: #eee; box-shadow: none; font: 600 26px -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] .pad button:active { background: #555; transform: none; }
+  html[data-theme="modern"] .pad button.hot { color: #ff6b5e; }
+  html[data-theme="modern"] .pad button.knight { background: #2a2a2a; color: #7bd88f; }
+  html[data-theme="modern"] .pips { display: none; }
+  html[data-theme="modern"] #stats { margin-top: 16px; }
+  html[data-theme="modern"] td.n { font-weight: 600; font-family: inherit; }
+  html[data-theme="modern"] td.n.hot, html[data-theme="modern"] #history td.v.hot { color: #ff6b5e; }
+  html[data-theme="modern"] td.p { color: #999; }
+  html[data-theme="modern"] .bar { background: #4a90e2; border: 0; border-radius: 3px; }
+  html[data-theme="modern"] .bar.hot { background: #ff6b5e; }
+  html[data-theme="modern"] #history th { color: #999; border-bottom: 1px solid #333; font-family: inherit; font-weight: 400; }
+  html[data-theme="modern"] #history td { border-bottom: 1px solid #222; }
+  html[data-theme="modern"] #history td.i { color: #777; }
+  html[data-theme="modern"] #ver { color: #666 !important; }
+  html[data-theme="modern"] #modal .box { background: #222; color: #eee; border: 0; }
+  html[data-theme="modern"] #modal .icon { display: none; }
+  html[data-theme="modern"] #drawer { background: #1c1c1c; color: #eee; border-right: 1px solid #333; }
+  html[data-theme="modern"] #themeList { border-color: #444; }
+  html[data-theme="modern"] #themeList button { background: #2a2a2a; color: #eee; border-bottom-color: #333; }
+  html[data-theme="modern"] #themeList button.sel { background: #2f6fd0; color: #fff; }
 </style>
 </head>
 <body>
+
+<div id="topbar"><button id="burger" aria-label="Menu">☰</button></div>
+<div id="scrim" hidden></div>
+<nav id="drawer">
+  <h2>Menu</h2>
+  <button class="btn" id="themeBtn"><span>Motyw</span><span id="themeCur"></span></button>
+  <div id="themeList" hidden></div>
+</nav>
 
 <section id="setup">
   <h1>CATAN</h1>
@@ -332,6 +405,36 @@
       if (r.n === 7 || r.n === 'R') t.textContent = r.t >= 0 ? '→ ' + state.names[r.t] : '—';
     }
   }
+  // ---- menu i motyw ----
+  const THEMES = { catan: 'Catan', modern: 'Nowoczesny' };
+  const getTheme = () => document.documentElement.dataset.theme;
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('catan-noter-theme', t); } catch (e) {}
+    renderThemes();
+  }
+  function renderThemes() {
+    $('themeCur').textContent = THEMES[getTheme()] + ' ▾';
+    const list = $('themeList');
+    list.textContent = '';
+    Object.entries(THEMES).forEach(([key, name]) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      if (key === getTheme()) b.className = 'sel';
+      b.onclick = () => setTheme(key);
+      list.appendChild(b);
+    });
+  }
+  function menu(open) {
+    $('drawer').classList.toggle('open', open);
+    $('scrim').hidden = !open;
+    if (!open) $('themeList').hidden = true;
+  }
+  $('burger').onclick = () => menu(true);
+  $('scrim').onclick = () => menu(false);
+  $('themeBtn').onclick = () => { $('themeList').hidden = !$('themeList').hidden; };
+  renderThemes();
+
   render();
   $('ver').textContent = 'v ' + BUILD;
 
