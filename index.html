@@ -73,12 +73,11 @@
   .radios input:checked + span { background: var(--green); color: var(--onAccent); font-weight: bold; }
 
   /* players */
-  /* etykieta „kto teraz” (nie jest przyciskiem) */
-  #players { margin: 6px 0 14px; display: flex; align-items: baseline; gap: 8px; font-size: 21px; user-select: none; -webkit-user-select: none; }
-  #players .cap { color: var(--soft); font-size: 16px; }
-  #players .who { font-weight: bold; color: var(--text); }
-  #players .who::before { content: ''; display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; border: 1px solid #000; background: var(--c); vertical-align: -1px; }
-  html[data-theme="modern"] #players .cap { color: #999; }
+  /* cztery etykiety graczy (nie przyciski); aktualny jest pogrubiony i podkreślony kolorem gracza */
+  #players { display: flex; justify-content: space-between; gap: 6px; margin: 8px 0 14px; user-select: none; -webkit-user-select: none; }
+  #players .lbl { flex: 1; text-align: center; font-size: 16px; color: var(--soft); opacity: .6; padding: 4px 0 6px; border-bottom: 3px solid transparent; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #players .lbl::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
+  #players .lbl.cur { opacity: 1; color: var(--text); font-weight: bold; font-size: 18px; border-bottom-color: var(--c); }
 
   /* number tokens */
   .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; justify-items: center; }
@@ -676,17 +675,16 @@
     $('info').textContent = `Gra ${state.game} · rzutów: ${dice.length}`;
     $('undo').disabled = !state.rolls.length;
 
-    // etykieta: kto teraz rzuca
+    // cztery etykiety graczy; aktualnie rzucający jest zaznaczony
     const pl = $('players');
     pl.textContent = '';
-    const cap = document.createElement('span');
-    cap.className = 'cap';
-    cap.textContent = 'Teraz rzuca:';
-    const who = document.createElement('span');
-    who.className = 'who';
-    who.textContent = state.names[state.current];
-    who.style.setProperty('--c', pColor(state.current));
-    pl.append(cap, who);
+    state.names.forEach((name, i) => {
+      const l = document.createElement('div');
+      l.textContent = name;
+      l.style.setProperty('--c', pColor(i));
+      l.className = i === state.current ? 'lbl cur' : 'lbl';
+      pl.appendChild(l);
+    });
 
     // statystyki
     const counts = Object.fromEntries(nums.map(n => [n, 0]));
