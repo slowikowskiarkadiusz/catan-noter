@@ -179,6 +179,7 @@
   .btn.end { width: 100%; margin-top: 20px; padding: 14px; font-size: 18px; font-weight: bold; letter-spacing: 2px; background: var(--danger); }
   .winners { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
   .winners button { padding: 14px 4px; font: inherit; font-size: 18px; border: 3px solid transparent; border-radius: 10px; background: var(--parch2); color: var(--ink); box-shadow: 0 2px 0 var(--line); }
+  .winners button.none { grid-column: 1 / -1; font-size: 16px; }
   .winners button.sel { border-color: var(--green); background: var(--sel); font-weight: bold; }
   .wins td { padding: 5px 6px; border-bottom: 1px solid var(--rule); }
   .wins tr:last-child td { border-bottom: 0; }
@@ -571,9 +572,9 @@
   };
 
   // ---- KONIEC: wybór zwycięzcy ----
-  let winner = -1;
+  let winner = null;  // indeks gracza albo 'none' (nikt nie wygrał)
   $('end').onclick = () => {
-    winner = -1;
+    winner = null;
     $('winOk').disabled = true;
     const box = $('winners');
     box.textContent = '';
@@ -587,14 +588,25 @@
       };
       box.appendChild(b);
     });
+    const none = document.createElement('button');
+    none.textContent = 'Nikt nie wygrał';
+    none.className = 'none';
+    none.onclick = () => {
+      winner = 'none';
+      [...box.children].forEach(c => c.classList.toggle('sel', c === none));
+      $('winOk').disabled = false;
+    };
+    box.appendChild(none);
     $('winModal').hidden = false;
   };
   $('winCancel').onclick = () => { $('winModal').hidden = true; };
   $('winOk').onclick = () => {
     $('winModal').hidden = true;
-    const name = state.names[winner];
-    wins[name] = (wins[name] || 0) + 1;
-    saveWins();
+    if (winner !== 'none') {
+      const name = state.names[winner];
+      wins[name] = (wins[name] || 0) + 1;
+      saveWins();
+    }
     // koniec gry: wróć do ustawień z tymi samymi imionami
     state.names.forEach((n, i) => { nameInputs[i].value = n; });
     chosen = state.colors ? [...state.colors] : [...DEFAULT_COLORS];
