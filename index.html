@@ -14,72 +14,200 @@
   body {
     margin: 0; background: #111; color: #eee;
     font: 16px -apple-system, system-ui, sans-serif;
-    padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
-    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 16px);
+    touch-action: manipulation;
   }
-  header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 8px; }
-  header span { color: #999; }
-  #undo { background: #333; color: #eee; border: 0; border-radius: 8px; padding: 8px 14px; font-size: 16px; }
-  #undo:disabled { opacity: .35; }
+  [hidden] { display: none !important; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 0 8px; }
+  header .info { color: #999; flex: 1; }
+  .btn { background: #333; color: #eee; border: 0; border-radius: 8px; padding: 8px 14px; font-size: 16px; }
+  .btn:disabled { opacity: .35; }
+  .btn.danger { background: #5a2420; }
+  .btn.primary { background: #2f6fd0; width: 100%; padding: 14px; font-size: 18px; font-weight: 600; margin-top: 16px; }
+
+  /* setup */
+  h2 { font-size: 18px; margin: 20px 0 8px; }
+  #setup input[type=text] {
+    width: 100%; padding: 12px; margin-bottom: 8px; font-size: 18px;
+    background: #222; color: #eee; border: 1px solid #444; border-radius: 8px;
+  }
+  .radios { display: flex; gap: 8px; }
+  .radios label { flex: 1; }
+  .radios input { position: absolute; opacity: 0; }
+  .radios span { display: block; text-align: center; padding: 12px; font-size: 18px; background: #2a2a2a; border-radius: 8px; }
+  .radios input:checked + span { background: #2f6fd0; font-weight: 600; }
+
+  /* game */
+  #players { display: flex; gap: 6px; margin: 4px 0 10px; }
+  #players button { flex: 1; padding: 10px 2px; font-size: 15px; border: 0; border-radius: 8px; background: #2a2a2a; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #players button.cur { background: #2f6fd0; color: #fff; font-weight: 600; }
   .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .pad button {
-    height: 64px; font-size: 26px; font-weight: 600; border: 0; border-radius: 12px;
-    background: #2a2a2a; color: #eee;
-  }
+  .pad button { height: 64px; font-size: 26px; font-weight: 600; border: 0; border-radius: 12px; background: #2a2a2a; color: #eee; }
   .pad button:active { background: #555; }
   .pad button.hot { color: #ff6b5e; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  td { padding: 4px 0; vertical-align: middle; }
+  table { width: 100%; border-collapse: collapse; }
+  #stats { margin-top: 16px; }
+  #stats td { padding: 4px 0; vertical-align: middle; }
   td.n { width: 28px; font-weight: 600; }
   td.c { width: 34px; text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
   td.p { width: 52px; text-align: right; color: #999; font-variant-numeric: tabular-nums; }
-  .bar { height: 14px; background: #4a90e2; border-radius: 3px; min-width: 0; transition: width .15s; }
+  .bar { height: 14px; background: #4a90e2; border-radius: 3px; transition: width .15s; }
   .bar.hot { background: #ff6b5e; }
+  #history { margin-top: 8px; }
+  #history th { text-align: left; color: #999; font-weight: 400; padding: 4px 6px; border-bottom: 1px solid #333; }
+  #history td { padding: 6px; border-bottom: 1px solid #222; }
+  #history td.v { font-weight: 600; }
+  #history td.v.hot { color: #ff6b5e; }
+  #history td.i { color: #777; width: 40px; }
 </style>
 </head>
 <body>
-<header><span id="total">Rzutów: 0</span><button id="undo" disabled>Cofnij</button></header>
-<div class="pad" id="pad"></div>
-<table id="stats"></table>
-<script>
-  const rolls = [];
-  const nums = [2,3,4,5,6,7,8,9,10,11,12];
-  const pad = document.getElementById('pad');
-  const stats = document.getElementById('stats');
-  const undo = document.getElementById('undo');
-  const total = document.getElementById('total');
 
-  // Układ 4 kolumny: 2..12 (11 przycisków)
+<section id="setup">
+  <h2>Gracze</h2>
+  <div id="nameInputs"></div>
+  <h2>Gra</h2>
+  <div class="radios">
+    <label><input type="radio" name="game" value="1" checked><span>1</span></label>
+    <label><input type="radio" name="game" value="2"><span>2</span></label>
+    <label><input type="radio" name="game" value="3"><span>3</span></label>
+  </div>
+  <button class="btn primary" id="start">Start</button>
+</section>
+
+<section id="game" hidden>
+  <header>
+    <span class="info" id="info"></span>
+    <button class="btn" id="undo">Cofnij</button>
+    <button class="btn danger" id="clear">Wyczyść</button>
+  </header>
+  <div id="players"></div>
+  <div class="pad" id="pad"></div>
+  <table id="stats"></table>
+  <h2>Ostatnie rzuty</h2>
+  <table id="history">
+    <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<script>
+  const KEY = 'catan-noter-state';
+  const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
+  const nums = [2,3,4,5,6,7,8,9,10,11,12];
+  const isHot = n => n === 6 || n === 8;
+  const $ = id => document.getElementById(id);
+
+  // state: null (ustawienia) albo { names, game, current, rolls: [{p, n}] }
+  let state = load();
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.names) && s.names.length === 4 && Array.isArray(s.rolls)) return s;
+    } catch (e) {}
+    return null;
+  }
+  function save() {
+    try {
+      if (state) localStorage.setItem(KEY, JSON.stringify(state));
+      else localStorage.removeItem(KEY);
+    } catch (e) {}
+  }
+
+  // ---- setup ----
+  const nameInputs = DEFAULT_NAMES.map(n => {
+    const i = document.createElement('input');
+    i.type = 'text'; i.value = n; i.maxLength = 20;
+    $('nameInputs').appendChild(i);
+    return i;
+  });
+
+  $('start').onclick = () => {
+    const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
+    const game = +document.querySelector('input[name=game]:checked').value;
+    state = { names, game, current: 0, rolls: [] };
+    save(); render();
+  };
+
+  // ---- game ----
   nums.forEach(n => {
     const b = document.createElement('button');
     b.textContent = n;
-    if (n === 6 || n === 8) b.className = 'hot';
-    b.onclick = () => { rolls.push(n); render(); };
-    pad.appendChild(b);
+    if (isHot(n)) b.className = 'hot';
+    b.onclick = () => {
+      state.rolls.push({ p: state.current, n });
+      state.current = (state.current + 1) % 4;
+      save(); render();
+    };
+    $('pad').appendChild(b);
   });
 
   nums.forEach(n => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="n${n===6||n===8?' hot':''}">${n}</td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
-    stats.appendChild(tr);
+    tr.innerHTML = `<td class="n"></td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
+    tr.cells[0].textContent = n;
+    $('stats').appendChild(tr);
   });
 
-  undo.onclick = () => { rolls.pop(); render(); };
+  $('undo').onclick = () => {
+    const last = state.rolls.pop();
+    if (last) state.current = last.p;
+    save(); render();
+  };
+
+  $('clear').onclick = () => {
+    if (!confirm('Wyczyścić dane i zacząć od nowa?')) return;
+    state = null;
+    save(); render();
+  };
 
   function render() {
+    $('setup').hidden = !!state;
+    $('game').hidden = !state;
+    if (!state) return;
+
+    $('info').textContent = `Gra ${state.game} · rzutów: ${state.rolls.length}`;
+    $('undo').disabled = !state.rolls.length;
+
+    // wybór gracza
+    const pl = $('players');
+    pl.textContent = '';
+    state.names.forEach((name, i) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      if (i === state.current) b.className = 'cur';
+      b.onclick = () => { state.current = i; save(); render(); };
+      pl.appendChild(b);
+    });
+
+    // statystyki
     const counts = Object.fromEntries(nums.map(n => [n, 0]));
-    rolls.forEach(n => counts[n]++);
+    state.rolls.forEach(r => counts[r.n]++);
+    const total = state.rolls.length;
     const max = Math.max(1, ...Object.values(counts));
-    [...stats.rows].forEach((tr, i) => {
+    [...$('stats').rows].forEach((tr, i) => {
       const n = nums[i], c = counts[n];
       tr.cells[1].textContent = c;
       const bar = tr.cells[2].firstChild;
       bar.style.width = (c / max * 100) + '%';
-      bar.className = 'bar' + (n === 6 || n === 8 ? ' hot' : '');
-      tr.cells[3].textContent = rolls.length ? Math.round(c / rolls.length * 100) + '%' : '0%';
+      bar.className = 'bar' + (isHot(n) ? ' hot' : '');
+      tr.cells[3].textContent = (total ? Math.round(c / total * 100) : 0) + '%';
     });
-    total.textContent = 'Rzutów: ' + rolls.length;
-    undo.disabled = !rolls.length;
+
+    // historia (najnowsze na górze)
+    const body = $('history').tBodies[0];
+    body.textContent = '';
+    for (let i = total - 1; i >= 0; i--) {
+      const r = state.rolls[i];
+      const tr = body.insertRow();
+      tr.insertCell().textContent = i + 1;
+      tr.insertCell().textContent = state.names[r.p];
+      const v = tr.insertCell();
+      v.textContent = r.n;
+      tr.cells[0].className = 'i';
+      v.className = 'v' + (isHot(r.n) ? ' hot' : '');
+    }
   }
   render();
 </script>
