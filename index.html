@@ -96,12 +96,12 @@
   #history td.pl::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; border: 1px solid #000; background: var(--c); }
 
   /* modal */
-  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-  #modal .box { background: var(--parch); color: var(--ink); border: 4px solid #8a6a3a; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; text-align: center; }
-  #modal .icon { font-size: 34px; }
-  #modal h3 { margin: 6px 0 16px; font-size: 22px; }
-  #modal .actions { display: flex; gap: 8px; }
-  #modal .actions .btn { flex: 1; padding: 12px 4px; font-size: 16px; margin: 0; width: auto; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal .box { background: var(--parch); color: var(--ink); border: 4px solid #8a6a3a; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; text-align: center; }
+  .modal .icon { font-size: 34px; }
+  .modal h3 { margin: 6px 0 16px; font-size: 22px; }
+  .modal .actions { display: flex; gap: 8px; }
+  .modal .actions .btn { flex: 1; padding: 12px 4px; font-size: 16px; margin: 0; width: auto; }
 
   /* burger + menu */
   #topbar { padding: 8px 0 0; }
@@ -157,12 +157,26 @@
   html[data-theme="modern"] #history td { border-bottom: 1px solid #222; }
   html[data-theme="modern"] #history td.i { color: #777; }
   html[data-theme="modern"] #ver { color: #666 !important; }
-  html[data-theme="modern"] #modal .box { background: #222; color: #eee; border: 0; }
-  html[data-theme="modern"] #modal .icon { display: none; }
+  html[data-theme="modern"] .modal .box { background: #222; color: #eee; border: 0; }
+  html[data-theme="modern"] .modal .icon { display: none; }
   html[data-theme="modern"] #drawer { background: #1c1c1c; color: #eee; border-right: 1px solid #333; }
   html[data-theme="modern"] #themeList { border-color: #444; }
   html[data-theme="modern"] #themeList button { background: #2a2a2a; color: #eee; border-bottom-color: #333; }
   html[data-theme="modern"] #themeList button.sel { background: #2f6fd0; color: #fff; }
+
+  /* koniec gry / wygrane */
+  .btn.end { width: 100%; margin-top: 20px; padding: 14px; font-size: 18px; font-weight: bold; letter-spacing: 2px; background: #7a2b22; }
+  .winners { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .winners button { padding: 14px 4px; font: inherit; font-size: 18px; border: 3px solid transparent; border-radius: 10px; background: var(--parch2); color: var(--ink); box-shadow: 0 2px 0 #8a6a3a; }
+  .winners button.sel { border-color: var(--green); background: #fff3cf; font-weight: bold; }
+  .wins td { padding: 5px 6px; border-bottom: 1px solid #cdb784; }
+  .wins tr:last-child td { border-bottom: 0; }
+  .wins td.w { text-align: right; font-weight: 800; font-family: var(--head); width: 50px; }
+  html[data-theme="modern"] .winners button { background: #2a2a2a; color: #eee; box-shadow: none; }
+  html[data-theme="modern"] .winners button.sel { background: #2f6fd0; border-color: #2f6fd0; color: #fff; }
+  html[data-theme="modern"] .btn.end { background: #5a2420; letter-spacing: 1px; }
+  html[data-theme="modern"] .wins td { border-bottom-color: #222; }
+  html[data-theme="modern"] .wins td.w { font-family: inherit; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -187,6 +201,8 @@
     <label><input type="radio" name="game" value="3"><span>3</span></label>
   </div>
   <button class="btn primary" id="start">Start</button>
+  <h2 style="margin-top:24px">Wygrane</h2>
+  <div class="panel" style="margin-top:0"><table class="wins"></table></div>
 </section>
 
 <section id="game" hidden>
@@ -203,11 +219,26 @@
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
   </table></div>
+  <button class="btn end" id="end">KONIEC</button>
+  <h2 style="margin-top:24px">Wygrane</h2>
+  <div class="panel" style="margin-top:0"><table class="wins"></table></div>
 </section>
+
+<div id="winModal" class="modal" hidden>
+  <div class="box">
+    <div class="icon">🏆</div>
+    <h3>Kto wygrał?</h3>
+    <div class="winners" id="winners"></div>
+    <div class="actions">
+      <button class="btn" id="winCancel">Anuluj</button>
+      <button class="btn primary" id="winOk" style="margin:0" disabled>Zapisz</button>
+    </div>
+  </div>
+</div>
 
 <div id="ver" style="text-align:center;color:#7a6540;font-size:12px;margin-top:16px"></div>
 
-<div id="modal" hidden>
+<div id="modal" class="modal" hidden>
   <div class="box">
     <div class="icon">♟︎</div>
     <h3 id="modalTitle"></h3>
@@ -222,6 +253,7 @@
 <script>
   const BUILD = 'dev';  // podmieniane przez workflow na hash commita
   const KEY = 'catan-noter-state';
+  const WINS_KEY = 'catan-noter-wins';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
@@ -243,6 +275,35 @@
       if (state) localStorage.setItem(KEY, JSON.stringify(state));
       else localStorage.removeItem(KEY);
     } catch (e) {}
+  }
+
+  // wygrane: { imię: liczba } — osobny klucz, nie jest czyszczone przez „Wyczyść”
+  let wins = loadWins();
+  function loadWins() {
+    try {
+      const w = JSON.parse(localStorage.getItem(WINS_KEY));
+      if (w && typeof w === 'object' && !Array.isArray(w)) return w;
+    } catch (e) {}
+    return {};
+  }
+  function saveWins() {
+    try { localStorage.setItem(WINS_KEY, JSON.stringify(wins)); } catch (e) {}
+  }
+  function renderWins() {
+    const names = new Set(Object.keys(wins));
+    if (state) state.names.forEach(n => names.add(n));
+    const rows = [...names].sort((a, b) => (wins[b] || 0) - (wins[a] || 0));
+    document.querySelectorAll('.wins').forEach(t => {
+      t.textContent = '';
+      if (!rows.length) { t.insertRow().insertCell().textContent = 'Brak zapisanych gier'; return; }
+      rows.forEach(n => {
+        const tr = t.insertRow();
+        tr.insertCell().textContent = n;
+        const c = tr.insertCell();
+        c.className = 'w';
+        c.textContent = wins[n] || 0;
+      });
+    });
   }
 
   // ---- setup ----
@@ -267,7 +328,7 @@
     const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
     const game = +document.querySelector('input[name=game]:checked').value;
     const first = +document.querySelector('input[name=first]:checked').value;
-    state = { names, game, current: first, rolls: [] };
+    state = { names, game, first, current: first, rolls: [] };
     save(); render();
   };
 
@@ -343,8 +404,41 @@
     save(); render();
   };
 
+  // „Wyczyść” zaczyna bieżącą grę od nowa (te same gracze i numer gry); wygrane zostają
   $('clear').onclick = () => {
-    if (!confirm('Wyczyścić dane i zacząć od nowa?')) return;
+    if (!confirm('Zacząć tę grę od nowa? Zapisane wygrane zostaną.')) return;
+    state.rolls = [];
+    state.current = state.first || 0;
+    save(); render();
+  };
+
+  // ---- KONIEC: wybór zwycięzcy ----
+  let winner = -1;
+  $('end').onclick = () => {
+    winner = -1;
+    $('winOk').disabled = true;
+    const box = $('winners');
+    box.textContent = '';
+    state.names.forEach((name, i) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      b.onclick = () => {
+        winner = i;
+        [...box.children].forEach(c => c.classList.toggle('sel', c === b));
+        $('winOk').disabled = false;
+      };
+      box.appendChild(b);
+    });
+    $('winModal').hidden = false;
+  };
+  $('winCancel').onclick = () => { $('winModal').hidden = true; };
+  $('winOk').onclick = () => {
+    $('winModal').hidden = true;
+    const name = state.names[winner];
+    wins[name] = (wins[name] || 0) + 1;
+    saveWins();
+    // koniec gry: wróć do ustawień z tymi samymi imionami
+    state.names.forEach((n, i) => { nameInputs[i].value = n; });
     state = null;
     save(); render();
   };
@@ -352,6 +446,7 @@
   function render() {
     $('setup').hidden = !!state;
     $('game').hidden = !state;
+    renderWins();
     if (!state) return;
 
     const dice = state.rolls.filter(r => r.n !== 'R');
