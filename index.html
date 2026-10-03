@@ -8,23 +8,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#111111">
 <title>Catan rzuty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=EB+Garamond:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
     --wood: #3a2616; --wood2: #4b3220; --parch: #f0e0b4; --parch2: #e3cf9c; --ink: #3a2616;
     --red: #b3261e; --gold: #d9a441; --green: #4f7a3a;
+    --head: 'Cinzel', Georgia, 'Palatino Linotype', serif;
     --p0: #c0392b; --p1: #2e6fb7; --p2: #e08a1e; --p3: #f2ede0;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0; color: var(--parch);
     background: var(--wood) repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 14px);
-    font: 16px Georgia, 'Palatino Linotype', serif;
+    font: 17px 'EB Garamond', Georgia, 'Palatino Linotype', serif;
     padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 16px);
     touch-action: manipulation; min-height: 100vh;
   }
   [hidden] { display: none !important; }
-  h1 { text-align: center; font-size: 28px; letter-spacing: 4px; margin: 18px 0 4px; color: var(--gold); text-shadow: 0 2px 0 #000; }
+  h1, h2, #history th { font-family: var(--head); }
+  h1 { text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 6px; margin: 18px 0 4px; color: var(--gold); text-shadow: 0 2px 0 #000; }
   h2 { font-size: 18px; margin: 20px 0 8px; color: var(--gold); letter-spacing: 1px; }
   small { color: #b9a47a; font-weight: 400; }
   header { display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; }
@@ -62,7 +67,7 @@
   .pad button {
     width: 100%; max-width: 78px; aspect-ratio: 1; border-radius: 50%; border: 3px solid #8a6a3a;
     background: radial-gradient(circle at 35% 30%, #f7ebc6, var(--parch2)); color: var(--ink);
-    font: bold 26px Georgia, serif; box-shadow: 0 3px 0 #1e130a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+    font: 800 25px var(--head); box-shadow: 0 3px 0 #1e130a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
   }
   .pad button:active { transform: translateY(3px); box-shadow: none; }
   .pad button.hot { color: var(--red); }
@@ -74,7 +79,7 @@
   /* tables on parchment */
   table { width: 100%; border-collapse: collapse; }
   #stats td { padding: 4px 0; vertical-align: middle; }
-  td.n { width: 30px; font-weight: bold; }
+  td.n { width: 30px; font-weight: 800; font-family: var(--head); }
   td.n.hot, #history td.v.hot { color: var(--red); }
   td.c { width: 40px; text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
   td.p { width: 52px; text-align: right; color: #7a6540; font-variant-numeric: tabular-nums; }
