@@ -300,6 +300,7 @@
   const BUILD = 'dev';  // podmieniane przez workflow na hash commita
   const KEY = 'catan-noter-state';
   const WINS_KEY = 'catan-noter-wins';
+  const SETUP_KEY = 'catan-noter-setup';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
@@ -399,12 +400,40 @@
       sw.style.background = c.hex;
       b.append(sw, c.name);
       if (chosen[k] === c.hex) b.className = 'sel';
-      b.onclick = () => { chosen[k] = c.hex; paintDots(); list.hidden = true; };
+      b.onclick = () => { chosen[k] = c.hex; paintDots(); saveSetup(); list.hidden = true; };
       list.appendChild(b);
     });
   }
   function paintDots() { dots.forEach((d, k) => { d.style.background = chosen[k]; }); }
   paintDots();
+
+  // ustawienia startowe (imiona, kolory, pierwszy gracz, numer gry) pamiętane osobno, żeby nie znikały po odświeżeniu
+  function saveSetup() {
+    try {
+      localStorage.setItem(SETUP_KEY, JSON.stringify({
+        names: nameInputs.map(i => i.value),
+        colors: chosen,
+        first: +document.querySelector('input[name=first]:checked').value,
+        game: +document.querySelector('input[name=game]:checked').value,
+      }));
+    } catch (e) {}
+  }
+  function loadSetup() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SETUP_KEY));
+      if (!d) return;
+      if (Array.isArray(d.names)) d.names.slice(0, 4).forEach((n, k) => { if (typeof n === 'string') nameInputs[k].value = n; });
+      if (Array.isArray(d.colors) && d.colors.length === 4) chosen = d.colors.map((c, k) => typeof c === 'string' ? c : DEFAULT_COLORS[k]);
+      const f = document.querySelector(`input[name=first][value="${d.first}"]`);
+      if (f) f.checked = true;
+      const g = document.querySelector(`input[name=game][value="${d.game}"]`);
+      if (g) g.checked = true;
+      paintDots();
+    } catch (e) {}
+  }
+  $('setup').addEventListener('input', saveSetup);
+  $('setup').addEventListener('change', saveSetup);
+  loadSetup();
 
   $('start').onclick = () => {
     const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
@@ -523,6 +552,7 @@
     state.names.forEach((n, i) => { nameInputs[i].value = n; });
     chosen = state.colors ? [...state.colors] : [...DEFAULT_COLORS];
     paintDots();
+    saveSetup();
     state = null;
     save(); render();
   };
