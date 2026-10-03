@@ -56,7 +56,6 @@
   .colorList button { display: flex; align-items: center; gap: 8px; padding: 10px; font: inherit; font-size: 16px; text-align: left; background: var(--parch2); color: var(--ink); border: 2px solid #8a6a3a; border-radius: 8px; }
   .colorList button i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #1e130a; flex: none; }
   .colorList button.sel { border-color: var(--green); background: #fff3cf; font-weight: bold; }
-  .colorList button:disabled { opacity: .4; }
   html[data-theme="modern"] .colorList button { background: #2a2a2a; color: #eee; border-color: #444; }
   html[data-theme="modern"] .colorList button.sel { border-color: #2f6fd0; }
   html[data-theme="modern"] .nameRow .dot { box-shadow: 0 0 0 2px #444; }
@@ -350,7 +349,7 @@
     return i;
   });
 
-  // dropdown koloru: kolory zajęte przez innych graczy są wyszarzone
+  // dropdown koloru (ten sam kolor może mieć kilku graczy)
   function fillColorList(k) {
     const list = lists[k];
     list.textContent = '';
@@ -360,7 +359,6 @@
       sw.style.background = c.hex;
       b.append(sw, c.name);
       if (chosen[k] === c.hex) b.className = 'sel';
-      b.disabled = chosen.some((h, j) => j !== k && h === c.hex);
       b.onclick = () => { chosen[k] = c.hex; paintDots(); list.hidden = true; };
       list.appendChild(b);
     });
