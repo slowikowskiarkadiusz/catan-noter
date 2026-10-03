@@ -223,6 +223,23 @@
   }
   html[data-theme="neon"] h1, html[data-theme="neon"] h2 { letter-spacing: 2px; }
   html[data-theme="neon"] .pad button { font-weight: 700; font-size: 22px; }
+
+  /* poker i bilard: zielone sukno, karty, żetony kasynowe, bila 8 */
+  html[data-theme="felt"] {
+    --wood: #0a4a2d; --wood2: #3b1f12; --parch: #f8f4e6; --parch2: #ece5cd; --ink: #1b1b1b;
+    --gold: #e3bc4b; --green: #0b6b3a; --red: #c1121f; --danger: #8c1c1c;
+    --text: #e8f3ea; --btnText: #f3e5c0; --edge: #04140c; --line: #b8962e; --rule: #d9d2bc;
+    --muted: #6b6652; --muted2: #8aa595; --soft: #b9d3c0; --sel: #fff1bf; --tok: #f8f4e6; --h1s: #04200f;
+    --pattern: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 5px 5px;
+  }
+  html[data-theme="felt"] .pad button {
+    background: radial-gradient(circle, #f8f4e6 0 56%, #1f4fa3 57%); border: 3px dashed #f8f4e6; box-shadow: 0 3px 0 #04140c; color: #1b1b1b;
+  }
+  html[data-theme="felt"] .pad button.hot { background: radial-gradient(circle, #f8f4e6 0 56%, #b3171f 57%); color: #b3171f; }
+  html[data-theme="felt"] .pad button.seven { background: radial-gradient(circle, #f8f4e6 0 44%, #111 45%); border: 3px solid #333; color: #111; }
+  html[data-theme="felt"] .pad button.knight { background: radial-gradient(circle, #f8f4e6 0 56%, #c9a227 57%); border: 3px dashed #f8f4e6; color: #1b1b1b; }
+  html[data-theme="felt"] .pad button:active { transform: translateY(3px); box-shadow: none; }
+  html[data-theme="felt"] .panel, html[data-theme="felt"] .modal .box { box-shadow: 0 3px 0 #04140c, inset 0 0 0 2px #f8f4e6, inset 0 0 0 3px var(--line); }
 </style>
 </head>
 <body>
@@ -615,7 +632,7 @@
     }
   }
   // ---- menu i motyw ----
-  const THEMES = { catan: 'Catan', modern: 'Nowoczesny', ocean: 'Morze', forest: 'Las', desert: 'Pustynia', neon: 'Neon' };
+  const THEMES = { catan: 'Catan', modern: 'Nowoczesny', ocean: 'Morze', forest: 'Las', desert: 'Pustynia', neon: 'Neon', felt: 'Poker i bilard' };
   const getTheme = () => document.documentElement.dataset.theme;
   function setTheme(t) {
     document.documentElement.dataset.theme = t;
