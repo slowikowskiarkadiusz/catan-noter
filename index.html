@@ -545,7 +545,7 @@
     const box = $('knightWho');
     box.textContent = '';
     const cur = state.current, prev = (cur + 3) % 4;
-    [[cur, 'Obecny'], [prev, 'Poprzedni']].forEach(([i, label]) => {
+    [[prev, 'Poprzedni'], [cur, 'Obecny']].forEach(([i, label]) => {
       const b = document.createElement('button');
       b.append(label + ':');
       b.append(document.createElement('br'));
