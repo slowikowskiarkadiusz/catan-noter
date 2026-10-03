@@ -67,6 +67,7 @@
   .pad button:active { transform: translateY(3px); box-shadow: none; }
   .pad button.hot { color: var(--red); }
   .pad button.seven { background: radial-gradient(circle at 35% 30%, #777, #3a3a3a); color: #eee; border-color: #222; }
+  .pad button.knight { background: radial-gradient(circle at 35% 30%, #6f9a55, #3d6a2a); color: #f5e9c0; border-color: #1f3a14; }
   .pips { display: flex; gap: 2px; height: 5px; }
   .pips i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 
@@ -190,19 +191,19 @@
   };
 
   // ---- game ----
-  nums.forEach(n => {
+  [...nums, 'R'].forEach(n => {
     const b = document.createElement('button');
     const num = document.createElement('span');
     num.textContent = n;
     b.append(num);
-    if (n !== 7) {
+    if (typeof n === 'number' && n !== 7) {
       const pips = document.createElement('span');
       pips.className = 'pips';
       for (let k = 0; k < 6 - Math.abs(7 - n); k++) pips.append(document.createElement('i'));
       b.append(pips);
     }
-    b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : '';
-    b.onclick = () => n === 7 ? askRobber() : addRoll(n, -1);
+    b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : n === 'R' ? 'knight' : '';
+    b.onclick = () => (n === 7 || n === 'R') ? askRobber(n) : addRoll(n, -1);
     $('pad').appendChild(b);
   });
 
@@ -216,18 +217,20 @@
 
   function addRoll(n, t) {
     state.rolls.push({ p: state.current, n, t });
-    state.current = (state.current + 1) % 4;
+    if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
     save(); render();
   }
 
-  // ---- 7: każdy gracz ma własną kolejność. Pierwszy raz: od siebie o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci); potem następna osoba po jego poprzednim celu.
+  // ---- 7 i rycerz (R): wspólna kolejka. Każdy gracz ma własną kolejność. Pierwszy raz: od siebie o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci); potem następna osoba po jego poprzednim celu.
   // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
   let candidates = [], ci = 0;
-  function askRobber() {
+  let kind = 7;
+  function askRobber(k) {
+    kind = k;
     const who = state.current;
     // licznik per gracz: gdzie ten gracz poprzednio wysłał złodzieja (z historii, więc cofnięcie działa);
     // pierwszy raz startuje od rzucającego przesuniętego o numer gry, potem zawsze następna osoba
-    const last = state.rolls.findLast(r => r.n === 7 && r.p === who && r.t >= 0);
+    const last = state.rolls.findLast(r => (r.n === 7 || r.n === 'R') && r.p === who && r.t >= 0);
     const base = last ? last.t : who;
     const step = last ? 1 : state.game;
     candidates = [];
@@ -240,17 +243,17 @@
     $('modal').hidden = false;
   }
   function showCandidate() {
-    $('modalTitle').textContent = `${state.names[state.current]} idzie do ${state.names[candidates[ci]]}`;
+    $('modalTitle').textContent = `${state.names[state.current]}${kind === 'R' ? ' (rycerz)' : ''} idzie do ${state.names[candidates[ci]]}`;
     $('modalSkip').textContent = ci === candidates.length - 1 ? 'Nikogo' : 'Pomiń';
   }
   $('modalSkip').onclick = () => {
     if (ci < candidates.length - 1) { ci++; showCandidate(); }
-    else { $('modal').hidden = true; addRoll(7, -1); }
+    else { $('modal').hidden = true; addRoll(kind, -1); }
   };
   $('modalCancel').onclick = () => { $('modal').hidden = true; };
   $('modalOk').onclick = () => {
     $('modal').hidden = true;
-    addRoll(7, candidates[ci]);
+    addRoll(kind, candidates[ci]);
   };
 
   $('undo').onclick = () => {
@@ -270,7 +273,8 @@
     $('game').hidden = !state;
     if (!state) return;
 
-    $('info').textContent = `Gra ${state.game} · rzutów: ${state.rolls.length}`;
+    const dice = state.rolls.filter(r => r.n !== 'R');
+    $('info').textContent = `Gra ${state.game} · rzutów: ${dice.length}`;
     $('undo').disabled = !state.rolls.length;
 
     // wybór gracza
@@ -287,8 +291,8 @@
 
     // statystyki
     const counts = Object.fromEntries(nums.map(n => [n, 0]));
-    state.rolls.forEach(r => counts[r.n]++);
-    const total = state.rolls.length;
+    dice.forEach(r => counts[r.n]++);
+    const total = dice.length;
     const max = Math.max(1, ...Object.values(counts));
     [...$('stats').rows].forEach((tr, i) => {
       const n = nums[i], c = counts[n];
@@ -303,7 +307,7 @@
     // historia (najnowsze na górze)
     const body = $('history').tBodies[0];
     body.textContent = '';
-    for (let i = total - 1; i >= 0; i--) {
+    for (let i = state.rolls.length - 1; i >= 0; i--) {
       const r = state.rolls[i];
       const tr = body.insertRow();
       tr.insertCell().textContent = i + 1;
@@ -317,7 +321,7 @@
       v.className = 'v' + (isHot(r.n) ? ' hot' : '');
       const t = tr.insertCell();
       t.className = 't';
-      if (r.n === 7) t.textContent = r.t >= 0 ? '→ ' + state.names[r.t] : '—';
+      if (r.n === 7 || r.n === 'R') t.textContent = r.t >= 0 ? '→ ' + state.names[r.t] : '—';
     }
   }
   render();
