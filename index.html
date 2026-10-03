@@ -127,6 +127,8 @@
   </table></div>
 </section>
 
+<div id="ver" style="text-align:center;color:#7a6540;font-size:12px;margin-top:16px"></div>
+
 <div id="modal" hidden>
   <div class="box">
     <div class="icon">♟︎</div>
@@ -140,6 +142,7 @@
 </div>
 
 <script>
+  const BUILD = 'dev';  // podmieniane przez workflow na hash commita
   const KEY = 'catan-noter-state';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
@@ -325,6 +328,18 @@
     }
   }
   render();
+  $('ver').textContent = 'v ' + BUILD;
+
+  // samoaktualizacja: jeśli Safari trzyma starą wersję w cache, wczytaj nową (inny adres omija cache)
+  if (BUILD !== 'dev') {
+    fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.text() : '')
+      .then(v => {
+        v = v.trim();
+        if (v && v !== BUILD && location.search !== '?v=' + v) location.replace(location.pathname + '?v=' + v);
+      })
+      .catch(() => {});
+  }
 </script>
 </body>
 </html>
