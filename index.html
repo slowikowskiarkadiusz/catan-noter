@@ -220,7 +220,7 @@
     save(); render();
   }
 
-  // ---- 7: złodziej idzie po kolei: od poprzedniego celu o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci).
+  // ---- 7: pierwsza siódemka: od rzucającego o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci); każda kolejna: następna osoba po poprzednim celu.
   // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
   let candidates = [], ci = 0;
   function askRobber() {
@@ -229,9 +229,10 @@
     // przy pierwszej siódemce startuje od rzucającego
     const last = state.rolls.findLast(r => r.n === 7 && r.t >= 0);
     const base = last ? last.t : who;
+    const step = last ? 1 : state.game;  // numer gry wyznacza tylko start; dalej po kolei
     candidates = [];
     for (let k = 0; k < 4; k++) {
-      const i = (base + state.game + k) % 4;
+      const i = (base + step + k) % 4;
       if (i !== who) candidates.push(i);
     }
     ci = 0;
