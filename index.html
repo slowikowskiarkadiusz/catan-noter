@@ -89,6 +89,8 @@
   .pad button.hot { color: var(--red); }
   .pad button.seven { background: radial-gradient(circle at 35% 30%, #777, #3a3a3a); color: #eee; border-color: #222; }
   .pad button.knight { background: radial-gradient(circle at 35% 30%, #6f9a55, #3d6a2a); color: #f5e9c0; border-color: #1f3a14; }
+  #pad.locked { opacity: .45; pointer-events: none; }
+  .pad { transition: opacity .15s; }
   .pips { display: flex; gap: 2px; height: 5px; }
   .pips i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 
@@ -522,7 +524,7 @@
       b.append(pips);
     }
     b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : n === 'R' ? 'knight' : '';
-    b.onclick = () => n === 7 ? askRobber(7, state.current) : n === 'R' ? askKnight() : addRoll(n, -1);
+    b.onclick = () => padLocked ? null : n === 7 ? askRobber(7, state.current) : n === 'R' ? askKnight() : addRoll(n, -1);
     $('pad').appendChild(b);
   });
 
@@ -534,7 +536,17 @@
     $('stats').appendChild(tr);
   });
 
+  // po zapisaniu rzutu kością blokada przycisków na 2 s (ochrona przed podwójnym stuknięciem)
+  let padLocked = false, lockTimer = null;
+  function lockPad(ms) {
+    padLocked = true;
+    $('pad').classList.add('locked');
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(() => { padLocked = false; $('pad').classList.remove('locked'); }, ms);
+  }
+
   function addRoll(n, t, p = state.current) {
+    if (n !== 'R') lockPad(2000);
     state.rolls.push({ p, n, t });
     if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
     save(); render();
