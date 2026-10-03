@@ -220,14 +220,18 @@
     save(); render();
   }
 
-  // ---- 7: złodziej idzie do gracza przesuniętego o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci).
+  // ---- 7: złodziej idzie po kolei: od poprzedniego celu o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci).
   // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
   let candidates = [], ci = 0;
   function askRobber() {
     const who = state.current;
+    // licznik: złodziej rusza od miejsca, gdzie stał ostatnio (wynika z historii, więc cofnięcie działa);
+    // przy pierwszej siódemce startuje od rzucającego
+    const last = state.rolls.findLast(r => r.n === 7 && r.t >= 0);
+    const base = last ? last.t : who;
     candidates = [];
     for (let k = 0; k < 4; k++) {
-      const i = (who + state.game + k) % 4;
+      const i = (base + state.game + k) % 4;
       if (i !== who) candidates.push(i);
     }
     ci = 0;
