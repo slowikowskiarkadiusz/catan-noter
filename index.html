@@ -51,7 +51,15 @@
   /* setup */
   #setup input[type=text] { width: 100%; padding: 12px; font: inherit; font-size: 18px; background: var(--parch2); color: var(--ink); border: 2px solid #8a6a3a; border-radius: 8px; }
   .nameRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .nameRow .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1e130a; flex: none; }
+  .nameRow .dot { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #1e130a; flex: none; padding: 0; box-shadow: 0 0 0 2px #8a6a3a; }
+  .colorList { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 10px; }
+  .colorList button { display: flex; align-items: center; gap: 8px; padding: 10px; font: inherit; font-size: 16px; text-align: left; background: var(--parch2); color: var(--ink); border: 2px solid #8a6a3a; border-radius: 8px; }
+  .colorList button i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #1e130a; flex: none; }
+  .colorList button.sel { border-color: var(--green); background: #fff3cf; font-weight: bold; }
+  .colorList button:disabled { opacity: .4; }
+  html[data-theme="modern"] .colorList button { background: #2a2a2a; color: #eee; border-color: #444; }
+  html[data-theme="modern"] .colorList button.sel { border-color: #2f6fd0; }
+  html[data-theme="modern"] .nameRow .dot { box-shadow: 0 0 0 2px #444; }
   .nameRow input[type=text] { flex: 1; }
   .nameRow input[type=radio] { width: 24px; height: 24px; accent-color: var(--green); }
   .radios { display: flex; gap: 8px; }
@@ -135,7 +143,6 @@
   html[data-theme="modern"] .panel { background: none; color: #eee; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
   html[data-theme="modern"] .panel h2 { color: #eee; }
   html[data-theme="modern"] #setup input[type=text] { background: #222; color: #eee; border: 1px solid #444; }
-  html[data-theme="modern"] .nameRow .dot, html[data-theme="modern"] #players button::before, html[data-theme="modern"] #history td.pl::before { display: none; }
   html[data-theme="modern"] .nameRow input[type=radio] { accent-color: #2f6fd0; }
   html[data-theme="modern"] .radios span { background: #2a2a2a; color: #eee; border: 0; }
   html[data-theme="modern"] .radios input:checked + span { background: #2f6fd0; color: #fff; font-weight: 600; }
@@ -258,7 +265,13 @@
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
   const $ = id => document.getElementById(id);
-  const pColor = i => `var(--p${i})`;
+  const COLORS = [
+    { name: 'Czerwony', hex: '#c0392b' }, { name: 'Niebieski', hex: '#2e6fb7' },
+    { name: 'Pomarańczowy', hex: '#e08a1e' }, { name: 'Biały', hex: '#f2ede0' },
+    { name: 'Zielony', hex: '#4f9a3a' }, { name: 'Brązowy', hex: '#8b5a2b' },
+  ];
+  const DEFAULT_COLORS = COLORS.slice(0, 4).map(c => c.hex);
+  const pColor = i => (state && state.colors && state.colors[i]) || DEFAULT_COLORS[i];
 
   // state: null (ustawienia) albo { names, game, current, rolls: [{p, n}] }
   let state = load();
@@ -307,28 +320,59 @@
   }
 
   // ---- setup ----
+  let chosen = [...DEFAULT_COLORS];
+  const dots = [], lists = [];
   const nameInputs = DEFAULT_NAMES.map((n, k) => {
+    const wrap = document.createElement('div');
     const row = document.createElement('div');
     row.className = 'nameRow';
+    const dot = document.createElement('button');
+    dot.className = 'dot';
+    dot.setAttribute('aria-label', 'Kolor gracza');
     const i = document.createElement('input');
     i.type = 'text'; i.value = n; i.maxLength = 20;
-    const dot = document.createElement('span');
-    dot.className = 'dot'; dot.style.background = pColor(k);
-    row.append(dot);
     const lab = document.createElement('label');
     const r = document.createElement('input');
     r.type = 'radio'; r.name = 'first'; r.value = k; r.checked = k === 0;
     lab.append(r);
-    row.append(i, lab);
-    $('nameInputs').appendChild(row);
+    row.append(dot, i, lab);
+    const list = document.createElement('div');
+    list.className = 'colorList';
+    list.hidden = true;
+    dot.onclick = () => {
+      const open = list.hidden;
+      lists.forEach(l => { l.hidden = true; });
+      if (open) { fillColorList(k); list.hidden = false; }
+    };
+    wrap.append(row, list);
+    $('nameInputs').appendChild(wrap);
+    dots.push(dot); lists.push(list);
     return i;
   });
+
+  // dropdown koloru: kolory zajęte przez innych graczy są wyszarzone
+  function fillColorList(k) {
+    const list = lists[k];
+    list.textContent = '';
+    COLORS.forEach(c => {
+      const b = document.createElement('button');
+      const sw = document.createElement('i');
+      sw.style.background = c.hex;
+      b.append(sw, c.name);
+      if (chosen[k] === c.hex) b.className = 'sel';
+      b.disabled = chosen.some((h, j) => j !== k && h === c.hex);
+      b.onclick = () => { chosen[k] = c.hex; paintDots(); list.hidden = true; };
+      list.appendChild(b);
+    });
+  }
+  function paintDots() { dots.forEach((d, k) => { d.style.background = chosen[k]; }); }
+  paintDots();
 
   $('start').onclick = () => {
     const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
     const game = +document.querySelector('input[name=game]:checked').value;
     const first = +document.querySelector('input[name=first]:checked').value;
-    state = { names, game, first, current: first, rolls: [] };
+    state = { names, game, first, colors: [...chosen], current: first, rolls: [] };
     save(); render();
   };
 
@@ -439,6 +483,8 @@
     saveWins();
     // koniec gry: wróć do ustawień z tymi samymi imionami
     state.names.forEach((n, i) => { nameInputs[i].value = n; });
+    chosen = state.colors ? [...state.colors] : [...DEFAULT_COLORS];
+    paintDots();
     state = null;
     save(); render();
   };
