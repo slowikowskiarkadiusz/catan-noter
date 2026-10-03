@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#111111">
 <title>Catan rzuty</title>
 <script>
-  try { document.documentElement.dataset.theme = localStorage.getItem('catan-noter-theme') || 'catan'; }
+  try { let t = localStorage.getItem('catan-noter-theme') || 'catan'; if (t === 'felt') t = 'poker'; document.documentElement.dataset.theme = t; }
   catch (e) { document.documentElement.dataset.theme = 'catan'; }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -224,22 +224,52 @@
   html[data-theme="neon"] h1, html[data-theme="neon"] h2 { letter-spacing: 2px; }
   html[data-theme="neon"] .pad button { font-weight: 700; font-size: 22px; }
 
-  /* poker i bilard: zielone sukno, karty, żetony kasynowe, bila 8 */
-  html[data-theme="felt"] {
-    --wood: #0a4a2d; --wood2: #3b1f12; --parch: #f8f4e6; --parch2: #ece5cd; --ink: #1b1b1b;
+  /* poker: ciemne kasyno, karty, żetony */
+  html[data-theme="poker"] {
+    --wood: #06301e; --wood2: #2a0f12; --parch: #f8f4e6; --parch2: #ece5cd; --ink: #1b1b1b;
     --gold: #e3bc4b; --green: #0b6b3a; --red: #c1121f; --danger: #8c1c1c;
-    --text: #e8f3ea; --btnText: #f3e5c0; --edge: #04140c; --line: #b8962e; --rule: #d9d2bc;
-    --muted: #6b6652; --muted2: #8aa595; --soft: #b9d3c0; --sel: #fff1bf; --tok: #f8f4e6; --h1s: #04200f;
-    --pattern: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 5px 5px;
+    --text: #e8f3ea; --btnText: #f3e5c0; --edge: #020c07; --line: #b8962e; --rule: #d9d2bc;
+    --muted: #6b6652; --muted2: #8aa595; --soft: #b9d3c0; --sel: #fff1bf; --tok: #f8f4e6; --h1s: #021408;
+    --pattern: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0 / 5px 5px;
   }
-  html[data-theme="felt"] .pad button {
-    background: radial-gradient(circle, #f8f4e6 0 56%, #1f4fa3 57%); border: 3px dashed #f8f4e6; box-shadow: 0 3px 0 #04140c; color: #1b1b1b;
+  html[data-theme="poker"] .pad button {
+    background: radial-gradient(circle, #f8f4e6 0 56%, #1f4fa3 57%); border: 3px dashed #f8f4e6; box-shadow: 0 3px 0 #020c07; color: #1b1b1b;
   }
-  html[data-theme="felt"] .pad button.hot { background: radial-gradient(circle, #f8f4e6 0 56%, #b3171f 57%); color: #b3171f; }
-  html[data-theme="felt"] .pad button.seven { background: radial-gradient(circle, #f8f4e6 0 44%, #111 45%); border: 3px solid #333; color: #111; }
-  html[data-theme="felt"] .pad button.knight { background: radial-gradient(circle, #f8f4e6 0 56%, #c9a227 57%); border: 3px dashed #f8f4e6; color: #1b1b1b; }
-  html[data-theme="felt"] .pad button:active { transform: translateY(3px); box-shadow: none; }
-  html[data-theme="felt"] .panel, html[data-theme="felt"] .modal .box { box-shadow: 0 3px 0 #04140c, inset 0 0 0 2px #f8f4e6, inset 0 0 0 3px var(--line); }
+  html[data-theme="poker"] .pad button.hot { background: radial-gradient(circle, #f8f4e6 0 56%, #b3171f 57%); color: #b3171f; }
+  html[data-theme="poker"] .pad button.seven { background: radial-gradient(circle, #232323 0 56%, #0b0b0b 57%); border: 3px dashed #c9a227; color: #f8f4e6; }
+  html[data-theme="poker"] .pad button.knight { background: radial-gradient(circle, #f8f4e6 0 56%, #c9a227 57%); border: 3px dashed #f8f4e6; color: #1b1b1b; }
+  html[data-theme="poker"] .pad button:active { transform: translateY(3px); box-shadow: none; }
+  html[data-theme="poker"] .panel, html[data-theme="poker"] .modal .box { box-shadow: 0 3px 0 #020c07, inset 0 0 0 2px #f8f4e6, inset 0 0 0 3px var(--line); }
+  html[data-theme="poker"] h2:not(.panel h2)::before { content: '♠ '; }
+  html[data-theme="poker"] #history td.v.hot, html[data-theme="poker"] td.n.hot { color: #c1121f; }
+
+  /* bilard: jasne sukno, drewniane bandy, kolorowe bile */
+  html[data-theme="billiard"] {
+    --wood: #0e7a46; --wood2: #24130a; --parch: #3a2114; --parch2: #4e2e1d; --ink: #f3e5c0;
+    --gold: #f6dd8a; --green: #0e7a46; --red: #ef4a4c; --danger: #8c1c1c;
+    --text: #f2fbf4; --btnText: #f3e5c0; --edge: #120a05; --line: #c9a24a; --rule: #6a4630;
+    --muted: #cdb88a; --muted2: #bfe3cc; --soft: #d8c79a; --sel: #6a4630; --tok: #fff; --h1s: #063d22;
+    --pattern: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 4px 4px;
+  }
+  html[data-theme="billiard"] .pad button {
+    border: 0; color: #111; box-shadow: 0 3px 0 #120a05, inset -5px -6px 10px rgba(0,0,0,.35), inset 3px 3px 6px rgba(255,255,255,.25);
+    background: radial-gradient(circle, #fbf8ee 0 47%, transparent 48%), var(--ball);
+  }
+  html[data-theme="billiard"] .pad button.hot { color: #c1121f; }
+  html[data-theme="billiard"] .pad button:active { transform: translateY(3px); box-shadow: none; }
+  html[data-theme="billiard"] .pips { display: none; }
+  html[data-theme="billiard"] .pad button:nth-child(1)  { --ball: linear-gradient(#1d4fa8, #1d4fa8); }
+  html[data-theme="billiard"] .pad button:nth-child(2)  { --ball: linear-gradient(#c4161c, #c4161c); }
+  html[data-theme="billiard"] .pad button:nth-child(3)  { --ball: linear-gradient(#5b2a86, #5b2a86); }
+  html[data-theme="billiard"] .pad button:nth-child(4)  { --ball: linear-gradient(#f08a1c, #f08a1c); }
+  html[data-theme="billiard"] .pad button:nth-child(5)  { --ball: linear-gradient(#1b7a3d, #1b7a3d); }
+  html[data-theme="billiard"] .pad button:nth-child(6)  { --ball: linear-gradient(#7a1f1f, #7a1f1f); }
+  html[data-theme="billiard"] .pad button:nth-child(7)  { --ball: linear-gradient(#141414, #141414); }
+  html[data-theme="billiard"] .pad button:nth-child(8)  { --ball: linear-gradient(#f8f6ef 0 22%, #f2c500 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(9)  { --ball: linear-gradient(#f8f6ef 0 22%, #1d4fa8 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(10) { --ball: linear-gradient(#f8f6ef 0 22%, #c4161c 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(11) { --ball: linear-gradient(#f8f6ef 0 22%, #5b2a86 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(12) { --ball: linear-gradient(#f3efe2, #f3efe2); color: #c1121f; }
 </style>
 </head>
 <body>
@@ -632,7 +662,7 @@
     }
   }
   // ---- menu i motyw ----
-  const THEMES = { catan: 'Catan', modern: 'Nowoczesny', ocean: 'Morze', forest: 'Las', desert: 'Pustynia', neon: 'Neon', felt: 'Poker i bilard' };
+  const THEMES = { catan: 'Catan', modern: 'Nowoczesny', ocean: 'Morze', forest: 'Las', desert: 'Pustynia', neon: 'Neon', poker: 'Poker', billiard: 'Bilard' };
   const getTheme = () => document.documentElement.dataset.theme;
   function setTheme(t) {
     document.documentElement.dataset.theme = t;
