@@ -9,75 +9,97 @@
 <meta name="theme-color" content="#111111">
 <title>Catan rzuty</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --wood: #3a2616; --wood2: #4b3220; --parch: #f0e0b4; --parch2: #e3cf9c; --ink: #3a2616;
+    --red: #b3261e; --gold: #d9a441; --green: #4f7a3a;
+    --p0: #c0392b; --p1: #2e6fb7; --p2: #e08a1e; --p3: #f2ede0;
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    margin: 0; background: #111; color: #eee;
-    font: 16px -apple-system, system-ui, sans-serif;
+    margin: 0; color: var(--parch);
+    background: var(--wood) repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 14px);
+    font: 16px Georgia, 'Palatino Linotype', serif;
     padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 16px);
-    touch-action: manipulation;
+    touch-action: manipulation; min-height: 100vh;
   }
   [hidden] { display: none !important; }
-  header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 0 8px; }
-  header .info { color: #999; flex: 1; }
-  .btn { background: #333; color: #eee; border: 0; border-radius: 8px; padding: 8px 14px; font-size: 16px; }
-  .btn:disabled { opacity: .35; }
-  .btn.danger { background: #5a2420; }
-  .btn.primary { background: #2f6fd0; width: 100%; padding: 14px; font-size: 18px; font-weight: 600; margin-top: 16px; }
+  h1 { text-align: center; font-size: 28px; letter-spacing: 4px; margin: 18px 0 4px; color: var(--gold); text-shadow: 0 2px 0 #000; }
+  h2 { font-size: 18px; margin: 20px 0 8px; color: var(--gold); letter-spacing: 1px; }
+  small { color: #b9a47a; font-weight: 400; }
+  header { display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; }
+  header .info { flex: 1; color: var(--parch); font-weight: bold; }
+
+  .btn { background: var(--wood2); color: var(--parch); border: 2px solid #1e130a; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 15px; box-shadow: 0 2px 0 #1e130a; }
+  .btn:active { transform: translateY(2px); box-shadow: none; }
+  .btn:disabled { opacity: .4; }
+  .btn.danger { background: #7a2b22; }
+  .btn.primary { background: var(--green); width: 100%; padding: 14px; font-size: 18px; font-weight: bold; margin-top: 16px; }
+
+  .panel { background: var(--parch); color: var(--ink); border-radius: 12px; padding: 12px; border: 3px solid #8a6a3a; box-shadow: 0 3px 0 #1e130a; margin-top: 12px; }
+  .panel h2 { color: var(--ink); margin: 0 0 6px; }
 
   /* setup */
-  h2 { font-size: 18px; margin: 20px 0 8px; }
-  #setup input[type=text] {
-    width: 100%; padding: 12px; margin-bottom: 8px; font-size: 18px;
-    background: #222; color: #eee; border: 1px solid #444; border-radius: 8px;
-  }
+  #setup input[type=text] { width: 100%; padding: 12px; font: inherit; font-size: 18px; background: var(--parch2); color: var(--ink); border: 2px solid #8a6a3a; border-radius: 8px; }
+  .nameRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .nameRow .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1e130a; flex: none; }
+  .nameRow input[type=text] { flex: 1; }
+  .nameRow input[type=radio] { width: 24px; height: 24px; accent-color: var(--green); }
   .radios { display: flex; gap: 8px; }
   .radios label { flex: 1; }
   .radios input { position: absolute; opacity: 0; }
-  .radios span { display: block; text-align: center; padding: 12px; font-size: 18px; background: #2a2a2a; border-radius: 8px; }
-  .radios input:checked + span { background: #2f6fd0; font-weight: 600; }
+  .radios span { display: block; text-align: center; padding: 12px; font-size: 20px; background: var(--parch2); color: var(--ink); border: 2px solid #8a6a3a; border-radius: 8px; }
+  .radios input:checked + span { background: var(--green); color: #fff; font-weight: bold; }
 
-  .nameRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .nameRow input[type=text] { margin-bottom: 0; flex: 1; }
-  .nameRow label { display: flex; align-items: center; gap: 4px; color: #999; font-size: 14px; }
-  .nameRow input[type=radio] { width: 22px; height: 22px; }
+  /* players */
+  #players { display: flex; gap: 6px; margin: 4px 0 12px; }
+  #players button { flex: 1; padding: 9px 2px; font: inherit; font-size: 15px; border: 2px solid #1e130a; border-radius: 8px; background: var(--wood2); color: #b9a47a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #players button::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
+  #players button.cur { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 3px var(--gold); }
+
+  /* number tokens */
+  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; justify-items: center; }
+  .pad button {
+    width: 100%; max-width: 78px; aspect-ratio: 1; border-radius: 50%; border: 3px solid #8a6a3a;
+    background: radial-gradient(circle at 35% 30%, #f7ebc6, var(--parch2)); color: var(--ink);
+    font: bold 26px Georgia, serif; box-shadow: 0 3px 0 #1e130a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  }
+  .pad button:active { transform: translateY(3px); box-shadow: none; }
+  .pad button.hot { color: var(--red); }
+  .pad button.seven { background: radial-gradient(circle at 35% 30%, #777, #3a3a3a); color: #eee; border-color: #222; }
+  .pips { display: flex; gap: 2px; height: 5px; }
+  .pips i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  /* tables on parchment */
+  table { width: 100%; border-collapse: collapse; }
+  #stats td { padding: 4px 0; vertical-align: middle; }
+  td.n { width: 30px; font-weight: bold; }
+  td.n.hot, #history td.v.hot { color: var(--red); }
+  td.c { width: 40px; text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
+  td.p { width: 52px; text-align: right; color: #7a6540; font-variant-numeric: tabular-nums; }
+  .bar { height: 14px; min-width: 0; background: var(--green); border-radius: 7px; border: 1px solid #1e130a; transition: width .15s; }
+  .bar.hot { background: var(--red); }
+  #history th { text-align: left; color: #7a6540; font-weight: normal; padding: 4px 6px; border-bottom: 2px solid #8a6a3a; }
+  #history td { padding: 6px; border-bottom: 1px solid #cdb784; }
+  #history td.v { font-weight: bold; }
+  #history td.i { color: #9a8458; width: 40px; }
+  #history td.pl::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; border: 1px solid #000; background: var(--c); }
 
   /* modal */
-  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-  #modal .box { background: #222; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; }
-  #modal h3 { margin: 0 0 14px; font-size: 20px; }
-  #modal .actions { display: flex; gap: 8px; margin-top: 16px; }
-  #modal .actions .btn { flex: 1; padding: 14px; font-size: 17px; }
-  #history td.t { color: #ccc; }
-
-  /* game */
-  #players { display: flex; gap: 6px; margin: 4px 0 10px; }
-  #players button { flex: 1; padding: 10px 2px; font-size: 15px; border: 0; border-radius: 8px; background: #2a2a2a; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #players button.cur { background: #2f6fd0; color: #fff; font-weight: 600; }
-  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .pad button { height: 64px; font-size: 26px; font-weight: 600; border: 0; border-radius: 12px; background: #2a2a2a; color: #eee; }
-  .pad button:active { background: #555; }
-  .pad button.hot { color: #ff6b5e; }
-  table { width: 100%; border-collapse: collapse; }
-  #stats { margin-top: 16px; }
-  #stats td { padding: 4px 0; vertical-align: middle; }
-  td.n { width: 28px; font-weight: 600; }
-  td.c { width: 34px; text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
-  td.p { width: 52px; text-align: right; color: #999; font-variant-numeric: tabular-nums; }
-  .bar { height: 14px; background: #4a90e2; border-radius: 3px; transition: width .15s; }
-  .bar.hot { background: #ff6b5e; }
-  #history { margin-top: 8px; }
-  #history th { text-align: left; color: #999; font-weight: 400; padding: 4px 6px; border-bottom: 1px solid #333; }
-  #history td { padding: 6px; border-bottom: 1px solid #222; }
-  #history td.v { font-weight: 600; }
-  #history td.v.hot { color: #ff6b5e; }
-  #history td.i { color: #777; width: 40px; }
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  #modal .box { background: var(--parch); color: var(--ink); border: 4px solid #8a6a3a; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; text-align: center; }
+  #modal .icon { font-size: 34px; }
+  #modal h3 { margin: 6px 0 16px; font-size: 22px; }
+  #modal .actions { display: flex; gap: 8px; }
+  #modal .actions .btn { flex: 1; padding: 12px 4px; font-size: 16px; margin: 0; width: auto; }
 </style>
 </head>
 <body>
 
 <section id="setup">
-  <h2>Gracze <small style="color:#999;font-weight:400">(kółko = pierwszy rzuca)</small></h2>
+  <h1>CATAN</h1>
+  <div style="text-align:center;color:#b9a47a">rzuty kością</div>
+  <h2>Gracze <small>(kółko = pierwszy rzuca)</small></h2>
   <div id="nameInputs"></div>
   <h2>Gra</h2>
   <div class="radios">
@@ -96,16 +118,17 @@
   </header>
   <div id="players"></div>
   <div class="pad" id="pad"></div>
-  <table id="stats"></table>
-  <h2>Ostatnie rzuty</h2>
-  <table id="history">
+  <div class="panel"><table id="stats"></table></div>
+  <h2 style="margin-top:20px">Ostatnie rzuty</h2>
+  <div class="panel" style="margin-top:0"><table id="history">
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
-  </table>
+  </table></div>
 </section>
 
 <div id="modal" hidden>
   <div class="box">
+    <div class="icon">♟︎</div>
     <h3 id="modalTitle"></h3>
     <div class="actions">
       <button class="btn" id="modalCancel">Anuluj</button>
@@ -121,6 +144,7 @@
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
   const $ = id => document.getElementById(id);
+  const pColor = i => `var(--p${i})`;
 
   // state: null (ustawienia) albo { names, game, current, rolls: [{p, n}] }
   let state = load();
@@ -145,6 +169,9 @@
     row.className = 'nameRow';
     const i = document.createElement('input');
     i.type = 'text'; i.value = n; i.maxLength = 20;
+    const dot = document.createElement('span');
+    dot.className = 'dot'; dot.style.background = pColor(k);
+    row.append(dot);
     const lab = document.createElement('label');
     const r = document.createElement('input');
     r.type = 'radio'; r.name = 'first'; r.value = k; r.checked = k === 0;
@@ -165,8 +192,16 @@
   // ---- game ----
   nums.forEach(n => {
     const b = document.createElement('button');
-    b.textContent = n;
-    if (isHot(n)) b.className = 'hot';
+    const num = document.createElement('span');
+    num.textContent = n;
+    b.append(num);
+    if (n !== 7) {
+      const pips = document.createElement('span');
+      pips.className = 'pips';
+      for (let k = 0; k < 6 - Math.abs(7 - n); k++) pips.append(document.createElement('i'));
+      b.append(pips);
+    }
+    b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : '';
     b.onclick = () => n === 7 ? askRobber() : addRoll(n, -1);
     $('pad').appendChild(b);
   });
@@ -175,6 +210,7 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `<td class="n"></td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
     tr.cells[0].textContent = n;
+    if (isHot(n)) tr.cells[0].classList.add('hot');
     $('stats').appendChild(tr);
   });
 
@@ -238,6 +274,7 @@
     state.names.forEach((name, i) => {
       const b = document.createElement('button');
       b.textContent = name;
+      b.style.setProperty('--c', pColor(i));
       if (i === state.current) b.className = 'cur';
       b.onclick = () => { state.current = i; save(); render(); };
       pl.appendChild(b);
@@ -253,6 +290,7 @@
       tr.cells[1].textContent = c;
       const bar = tr.cells[2].firstChild;
       bar.style.width = (c / max * 100) + '%';
+      bar.style.borderWidth = c ? '1px' : '0';
       bar.className = 'bar' + (isHot(n) ? ' hot' : '');
       tr.cells[3].textContent = (total ? Math.round(c / total * 100) : 0) + '%';
     });
@@ -264,7 +302,10 @@
       const r = state.rolls[i];
       const tr = body.insertRow();
       tr.insertCell().textContent = i + 1;
-      tr.insertCell().textContent = state.names[r.p];
+      const pc = tr.insertCell();
+      pc.textContent = state.names[r.p];
+      pc.className = 'pl';
+      pc.style.setProperty('--c', pColor(r.p));
       const v = tr.insertCell();
       v.textContent = r.n;
       tr.cells[0].className = 'i';
