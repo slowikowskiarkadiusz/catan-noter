@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Catan">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111111">
+<title>Catan rzuty</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: #111; color: #eee;
+    font: 16px -apple-system, system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 8px; }
+  header span { color: #999; }
+  #undo { background: #333; color: #eee; border: 0; border-radius: 8px; padding: 8px 14px; font-size: 16px; }
+  #undo:disabled { opacity: .35; }
+  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .pad button {
+    height: 64px; font-size: 26px; font-weight: 600; border: 0; border-radius: 12px;
+    background: #2a2a2a; color: #eee;
+  }
+  .pad button:active { background: #555; }
+  .pad button.hot { color: #ff6b5e; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  td { padding: 4px 0; vertical-align: middle; }
+  td.n { width: 28px; font-weight: 600; }
+  td.c { width: 34px; text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
+  td.p { width: 52px; text-align: right; color: #999; font-variant-numeric: tabular-nums; }
+  .bar { height: 14px; background: #4a90e2; border-radius: 3px; min-width: 0; transition: width .15s; }
+  .bar.hot { background: #ff6b5e; }
+</style>
+</head>
+<body>
+<header><span id="total">Rzutów: 0</span><button id="undo" disabled>Cofnij</button></header>
+<div class="pad" id="pad"></div>
+<table id="stats"></table>
+<script>
+  const rolls = [];
+  const nums = [2,3,4,5,6,7,8,9,10,11,12];
+  const pad = document.getElementById('pad');
+  const stats = document.getElementById('stats');
+  const undo = document.getElementById('undo');
+  const total = document.getElementById('total');
+
+  // Układ 4 kolumny: 2..12 (11 przycisków)
+  nums.forEach(n => {
+    const b = document.createElement('button');
+    b.textContent = n;
+    if (n === 6 || n === 8) b.className = 'hot';
+    b.onclick = () => { rolls.push(n); render(); };
+    pad.appendChild(b);
+  });
+
+  nums.forEach(n => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="n${n===6||n===8?' hot':''}">${n}</td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
+    stats.appendChild(tr);
+  });
+
+  undo.onclick = () => { rolls.pop(); render(); };
+
+  function render() {
+    const counts = Object.fromEntries(nums.map(n => [n, 0]));
+    rolls.forEach(n => counts[n]++);
+    const max = Math.max(1, ...Object.values(counts));
+    [...stats.rows].forEach((tr, i) => {
+      const n = nums[i], c = counts[n];
+      tr.cells[1].textContent = c;
+      const bar = tr.cells[2].firstChild;
+      bar.style.width = (c / max * 100) + '%';
+      bar.className = 'bar' + (n === 6 || n === 8 ? ' hot' : '');
+      tr.cells[3].textContent = rolls.length ? Math.round(c / rolls.length * 100) + '%' : '0%';
+    });
+    total.textContent = 'Rzutów: ' + rolls.length;
+    undo.disabled = !rolls.length;
+  }
+  render();
+</script>
+</body>
+</html>
