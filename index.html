@@ -109,6 +109,7 @@
     <h3 id="modalTitle"></h3>
     <div class="actions">
       <button class="btn" id="modalCancel">Anuluj</button>
+      <button class="btn" id="modalSkip">Pomiń</button>
       <button class="btn primary" id="modalOk" style="margin:0">Potwierdź</button>
     </div>
   </div>
@@ -183,18 +184,32 @@
     save(); render();
   }
 
-  // ---- 7: złodziej idzie do gracza przesuniętego o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci) ----
-  let target = null;
+  // ---- 7: złodziej idzie do gracza przesuniętego o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci).
+  // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
+  let candidates = [], ci = 0;
   function askRobber() {
     const who = state.current;
-    target = (who + state.game) % 4;
-    $('modalTitle').textContent = `${state.names[who]} idzie do ${state.names[target]}`;
+    candidates = [];
+    for (let k = 0; k < 4; k++) {
+      const i = (who + state.game + k) % 4;
+      if (i !== who) candidates.push(i);
+    }
+    ci = 0;
+    showCandidate();
     $('modal').hidden = false;
   }
+  function showCandidate() {
+    $('modalTitle').textContent = `${state.names[state.current]} idzie do ${state.names[candidates[ci]]}`;
+    $('modalSkip').textContent = ci === candidates.length - 1 ? 'Nikogo' : 'Pomiń';
+  }
+  $('modalSkip').onclick = () => {
+    if (ci < candidates.length - 1) { ci++; showCandidate(); }
+    else { $('modal').hidden = true; addRoll(7, -1); }
+  };
   $('modalCancel').onclick = () => { $('modal').hidden = true; };
   $('modalOk').onclick = () => {
     $('modal').hidden = true;
-    addRoll(7, target);
+    addRoll(7, candidates[ci]);
   };
 
   $('undo').onclick = () => {
