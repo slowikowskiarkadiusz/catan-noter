@@ -74,9 +74,9 @@
 
   /* players */
   #players { display: flex; gap: 6px; margin: 4px 0 12px; }
-  #players button { flex: 1; padding: 9px 2px; font: inherit; font-size: 15px; border: 2px solid var(--edge); border-radius: 8px; background: var(--wood2); color: var(--soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #players button::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
-  #players button.cur { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 3px var(--gold); }
+  #players .pl { flex: 1; text-align: center; user-select: none; -webkit-user-select: none; padding: 9px 2px; font: inherit; font-size: 15px; border: 2px solid var(--edge); border-radius: 8px; background: var(--wood2); color: var(--soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #players .pl::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
+  #players .pl.cur { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 3px var(--gold); }
 
   /* number tokens */
   .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; justify-items: center; }
@@ -150,8 +150,8 @@
   html[data-theme="modern"] .nameRow input[type=radio] { accent-color: #2f6fd0; }
   html[data-theme="modern"] .radios span { background: #2a2a2a; color: #eee; border: 0; }
   html[data-theme="modern"] .radios input:checked + span { background: #2f6fd0; color: #fff; font-weight: 600; }
-  html[data-theme="modern"] #players button { background: #2a2a2a; color: #aaa; border: 0; }
-  html[data-theme="modern"] #players button.cur { background: #2f6fd0; color: #fff; box-shadow: none; font-weight: 600; }
+  html[data-theme="modern"] #players .pl { background: #2a2a2a; color: #aaa; border: 0; }
+  html[data-theme="modern"] #players .pl.cur { background: #2f6fd0; color: #fff; box-shadow: none; font-weight: 600; }
   html[data-theme="modern"] .pad { gap: 8px; justify-items: stretch; }
   html[data-theme="modern"] .pad button { max-width: none; aspect-ratio: auto; height: 64px; border: 0; border-radius: 12px; background: #2a2a2a; color: #eee; box-shadow: none; font: 600 26px -apple-system, system-ui, sans-serif; }
   html[data-theme="modern"] .pad button:active { background: #555; transform: none; }
@@ -668,11 +668,10 @@
     const pl = $('players');
     pl.textContent = '';
     state.names.forEach((name, i) => {
-      const b = document.createElement('button');
+      const b = document.createElement('div');  // tylko etykieta „kto teraz”, nie do klikania
       b.textContent = name;
       b.style.setProperty('--c', pColor(i));
-      if (i === state.current) b.className = 'cur';
-      b.onclick = () => { state.current = i; save(); render(); };
+      b.className = i === state.current ? 'pl cur' : 'pl';
       pl.appendChild(b);
     });
 
