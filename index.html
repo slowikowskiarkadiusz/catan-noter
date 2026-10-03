@@ -318,6 +318,17 @@
   <div class="panel" style="margin-top:0"><table class="wins"></table></div>
 </section>
 
+<div id="knightModal" class="modal" hidden>
+  <div class="box">
+    <div class="icon">♞</div>
+    <h3>Kto używa rycerza?</h3>
+    <div class="winners" id="knightWho"></div>
+    <div class="actions">
+      <button class="btn" id="knightCancel">Anuluj</button>
+    </div>
+  </div>
+</div>
+
 <div id="winModal" class="modal" hidden>
   <div class="box">
     <div class="icon">🏆</div>
@@ -504,7 +515,7 @@
       b.append(pips);
     }
     b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : n === 'R' ? 'knight' : '';
-    b.onclick = () => (n === 7 || n === 'R') ? askRobber(n) : addRoll(n, -1);
+    b.onclick = () => n === 7 ? askRobber(7, state.current) : n === 'R' ? askKnight() : addRoll(n, -1);
     $('pad').appendChild(b);
   });
 
@@ -516,19 +527,37 @@
     $('stats').appendChild(tr);
   });
 
-  function addRoll(n, t) {
-    state.rolls.push({ p: state.current, n, t });
+  function addRoll(n, t, p = state.current) {
+    state.rolls.push({ p, n, t });
     if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
     save(); render();
   }
+
+  // rycerz: najpierw pytanie, kto go używa (obecny gracz czy poprzedni); rycerz nie przesuwa tury
+  function askKnight() {
+    const box = $('knightWho');
+    box.textContent = '';
+    const cur = state.current, prev = (cur + 3) % 4;
+    [[cur, 'Obecny'], [prev, 'Poprzedni']].forEach(([i, label]) => {
+      const b = document.createElement('button');
+      b.append(label + ':');
+      b.append(document.createElement('br'));
+      b.append(state.names[i]);
+      b.onclick = () => { $('knightModal').hidden = true; askRobber('R', i); };
+      box.appendChild(b);
+    });
+    $('knightModal').hidden = false;
+  }
+  $('knightCancel').onclick = () => { $('knightModal').hidden = true; };
 
   // ---- 7 i rycerz (R): wspólna kolejka. Każdy gracz ma własną kolejność. Pierwszy raz: od siebie o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci); potem następna osoba po jego poprzednim celu.
   // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
   let candidates = [], ci = 0;
   let kind = 7;
-  function askRobber(k) {
+  let robWho = 0;
+  function askRobber(k, who) {
     kind = k;
-    const who = state.current;
+    robWho = who;
     // licznik per gracz: gdzie ten gracz poprzednio wysłał złodzieja (z historii, więc cofnięcie działa);
     // pierwszy raz startuje od rzucającego przesuniętego o numer gry, potem zawsze następna osoba
     const last = state.rolls.findLast(r => (r.n === 7 || r.n === 'R') && r.p === who && r.t >= 0);
@@ -544,22 +573,22 @@
     $('modal').hidden = false;
   }
   function showCandidate() {
-    $('modalTitle').textContent = `${state.names[state.current]}${kind === 'R' ? ' (rycerz)' : ''} idzie do ${state.names[candidates[ci]]}`;
+    $('modalTitle').textContent = `${state.names[robWho]}${kind === 'R' ? ' (rycerz)' : ''} idzie do ${state.names[candidates[ci]]}`;
     $('modalSkip').textContent = ci === candidates.length - 1 ? 'Nikogo' : 'Pomiń';
   }
   $('modalSkip').onclick = () => {
     if (ci < candidates.length - 1) { ci++; showCandidate(); }
-    else { $('modal').hidden = true; addRoll(kind, -1); }
+    else { $('modal').hidden = true; addRoll(kind, -1, robWho); }
   };
   $('modalCancel').onclick = () => { $('modal').hidden = true; };
   $('modalOk').onclick = () => {
     $('modal').hidden = true;
-    addRoll(kind, candidates[ci]);
+    addRoll(kind, candidates[ci], robWho);
   };
 
   $('undo').onclick = () => {
     const last = state.rolls.pop();
-    if (last) state.current = last.p;
+    if (last && last.n !== 'R') state.current = last.p;  // rycerz nie zmieniał tury
     save(); render();
   };
 
