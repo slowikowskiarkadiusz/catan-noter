@@ -37,6 +37,22 @@
   .radios span { display: block; text-align: center; padding: 12px; font-size: 18px; background: #2a2a2a; border-radius: 8px; }
   .radios input:checked + span { background: #2f6fd0; font-weight: 600; }
 
+  .nameRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .nameRow input[type=text] { margin-bottom: 0; flex: 1; }
+  .nameRow label { display: flex; align-items: center; gap: 4px; color: #999; font-size: 14px; }
+  .nameRow input[type=radio] { width: 22px; height: 22px; }
+
+  /* modal */
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  #modal .box { background: #222; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; }
+  #modal h3 { margin: 0 0 14px; font-size: 20px; }
+  #modal .targets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #modal .targets button { padding: 14px 4px; font-size: 18px; border: 2px solid transparent; border-radius: 10px; background: #333; color: #eee; }
+  #modal .targets button.sel { border-color: #2f6fd0; background: #2f6fd0; font-weight: 600; }
+  #modal .actions { display: flex; gap: 8px; margin-top: 16px; }
+  #modal .actions .btn { flex: 1; padding: 14px; font-size: 17px; }
+  #history td.t { color: #ccc; }
+
   /* game */
   #players { display: flex; gap: 6px; margin: 4px 0 10px; }
   #players button { flex: 1; padding: 10px 2px; font-size: 15px; border: 0; border-radius: 8px; background: #2a2a2a; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -64,7 +80,7 @@
 <body>
 
 <section id="setup">
-  <h2>Gracze</h2>
+  <h2>Gracze <small style="color:#999;font-weight:400">(kółko = pierwszy rzuca)</small></h2>
   <div id="nameInputs"></div>
   <h2>Gra</h2>
   <div class="radios">
@@ -86,10 +102,21 @@
   <table id="stats"></table>
   <h2>Ostatnie rzuty</h2>
   <table id="history">
-    <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th></tr></thead>
+    <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
   </table>
 </section>
+
+<div id="modal" hidden>
+  <div class="box">
+    <h3 id="modalTitle"></h3>
+    <div class="targets" id="targets"></div>
+    <div class="actions">
+      <button class="btn" id="modalCancel">Anuluj</button>
+      <button class="btn primary" id="modalOk" style="margin:0" disabled>Potwierdź</button>
+    </div>
+  </div>
+</div>
 
 <script>
   const KEY = 'catan-noter-state';
@@ -116,17 +143,25 @@
   }
 
   // ---- setup ----
-  const nameInputs = DEFAULT_NAMES.map(n => {
+  const nameInputs = DEFAULT_NAMES.map((n, k) => {
+    const row = document.createElement('div');
+    row.className = 'nameRow';
     const i = document.createElement('input');
     i.type = 'text'; i.value = n; i.maxLength = 20;
-    $('nameInputs').appendChild(i);
+    const lab = document.createElement('label');
+    const r = document.createElement('input');
+    r.type = 'radio'; r.name = 'first'; r.value = k; r.checked = k === 0;
+    lab.append(r);
+    row.append(i, lab);
+    $('nameInputs').appendChild(row);
     return i;
   });
 
   $('start').onclick = () => {
     const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
     const game = +document.querySelector('input[name=game]:checked').value;
-    state = { names, game, current: 0, rolls: [] };
+    const first = +document.querySelector('input[name=first]:checked').value;
+    state = { names, game, current: first, rolls: [] };
     save(); render();
   };
 
@@ -135,11 +170,7 @@
     const b = document.createElement('button');
     b.textContent = n;
     if (isHot(n)) b.className = 'hot';
-    b.onclick = () => {
-      state.rolls.push({ p: state.current, n });
-      state.current = (state.current + 1) % 4;
-      save(); render();
-    };
+    b.onclick = () => n === 7 ? askRobber() : addRoll(n, -1);
     $('pad').appendChild(b);
   });
 
@@ -149,6 +180,42 @@
     tr.cells[0].textContent = n;
     $('stats').appendChild(tr);
   });
+
+  function addRoll(n, t) {
+    state.rolls.push({ p: state.current, n, t });
+    state.current = (state.current + 1) % 4;
+    save(); render();
+  }
+
+  // ---- 7: do kogo idzie złodziej ----
+  let target = null;
+  function askRobber() {
+    const who = state.current;
+    target = null;
+    $('modalOk').disabled = true;
+    $('modalTitle').textContent = state.names[who] + ' idzie do:';
+    const box = $('targets');
+    box.textContent = '';
+    const opts = state.names.map((name, i) => [i, name]).filter(([i]) => i !== who);
+    opts.push([-1, 'Nikogo']);
+    opts.forEach(([i, name]) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      b.onclick = () => {
+        target = i;
+        [...box.children].forEach(c => c.classList.toggle('sel', c === b));
+        $('modalTitle').textContent = i < 0 ? state.names[who] + ' idzie donikąd' : `${state.names[who]} idzie do ${name}`;
+        $('modalOk').disabled = false;
+      };
+      box.appendChild(b);
+    });
+    $('modal').hidden = false;
+  }
+  $('modalCancel').onclick = () => { $('modal').hidden = true; };
+  $('modalOk').onclick = () => {
+    $('modal').hidden = true;
+    addRoll(7, target);
+  };
 
   $('undo').onclick = () => {
     const last = state.rolls.pop();
@@ -207,6 +274,9 @@
       v.textContent = r.n;
       tr.cells[0].className = 'i';
       v.className = 'v' + (isHot(r.n) ? ' hot' : '');
+      const t = tr.insertCell();
+      t.className = 't';
+      if (r.n === 7) t.textContent = r.t >= 0 ? '→ ' + state.names[r.t] : '—';
     }
   }
   render();
