@@ -180,7 +180,8 @@
   .winners { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
   .winners button { padding: 14px 4px; font: inherit; font-size: 18px; border: 3px solid transparent; border-radius: 10px; background: var(--parch2); color: var(--ink); box-shadow: 0 2px 0 var(--line); }
   .winners button.none { grid-column: 1 / -1; font-size: 16px; }
-  .winners button.sel { border-color: var(--green); background: var(--sel); font-weight: bold; }
+  .winners button.sel { outline: 4px solid var(--gold); outline-offset: 1px; font-weight: bold; }
+  .winners button.none.sel { background: var(--sel); }
   .wins td { padding: 5px 6px; border-bottom: 1px solid var(--rule); }
   .wins tr:last-child td { border-bottom: 0; }
   .wins td.w { text-align: right; font-weight: 800; font-family: var(--head); width: 50px; }
@@ -369,6 +370,12 @@
     { name: 'Pomarańczowy', hex: '#e08a1e' }, { name: 'Biały', hex: '#f2ede0' },
     { name: 'Zielony', hex: '#4f9a3a' }, { name: 'Brązowy', hex: '#8b5a2b' },
   ];
+  // czytelny kolor tekstu na tle w kolorze gracza
+  function inkOn(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150 ? '#111' : '#fff';
+  }
+  function tint(b, i) { b.style.background = pColor(i); b.style.color = inkOn(pColor(i)); }
   const DEFAULT_COLORS = COLORS.slice(0, 4).map(c => c.hex);
   const pColor = i => (state && state.colors && state.colors[i]) || DEFAULT_COLORS[i];
 
@@ -543,6 +550,7 @@
       b.append(label + ':');
       b.append(document.createElement('br'));
       b.append(state.names[i]);
+      tint(b, i);
       b.onclick = () => { $('knightModal').hidden = true; askRobber('R', i); };
       box.appendChild(b);
     });
@@ -610,6 +618,7 @@
     state.names.forEach((name, i) => {
       const b = document.createElement('button');
       b.textContent = name;
+      tint(b, i);
       b.onclick = () => {
         winner = i;
         [...box.children].forEach(c => c.classList.toggle('sel', c === b));
