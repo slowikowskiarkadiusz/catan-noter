@@ -283,6 +283,7 @@
   <h2>Menu</h2>
   <button class="btn" id="themeBtn"><span>Motyw</span><span id="themeCur"></span></button>
   <div id="themeList" hidden></div>
+  <button class="btn" id="refreshBtn" style="width:100%;text-align:left;margin-top:10px">Wczytaj najnowszą wersję</button>
 </nav>
 
 <section id="setup">
@@ -748,6 +749,8 @@
   }
   $('burger').onclick = () => menu(true);
   $('scrim').onclick = () => menu(false);
+  // wymusza pobranie nowej wersji z pominięciem cache (dane gry zostają w localStorage)
+  $('refreshBtn').onclick = () => location.replace(location.pathname + '?r=' + Date.now());
   $('themeBtn').onclick = () => { $('themeList').hidden = !$('themeList').hidden; };
   renderThemes();
 
