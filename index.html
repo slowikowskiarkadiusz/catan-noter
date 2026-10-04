@@ -279,7 +279,7 @@
   .slide-l { animation: slidel .22s ease-out; }
   .slide-r { animation: slider .22s ease-out; }
 
-  /* budowle i wykres punktów: jeden wiersz na gracza, etykiety kolumn pionowo, + nad liczbą, − pod nią */
+  /* budowle i wykres punktów: jeden wiersz na gracza, etykiety kolumn pionowo, − nad liczbą, + pod nią */
   .bt { display: grid; grid-template-columns: 66px repeat(5, 1fr); gap: 0 2px; align-items: stretch; }
   .blab { display: flex; justify-content: center; align-items: flex-end; padding-bottom: 4px; }
   .blab span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 13px; font-weight: bold; color: var(--muted); }
@@ -1143,7 +1143,7 @@
         minus.setAttribute('aria-label', `${name}: ${label} minus`);
         minus.disabled = state.counts[p][k] <= 0;
         minus.onclick = () => bump(p, k, -1);
-        cell.append(plus, el('span', 'bcv', state.counts[p][k]), minus);
+        cell.append(minus, el('span', 'bcv', state.counts[p][k]), plus);
         grid.append(cell);
       });
     });
