@@ -203,7 +203,7 @@
   .tabs { display: flex; gap: 6px; margin-top: 16px; }
   .tabs button { flex: 1; padding: 10px 2px; font: inherit; font-size: 14px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
   .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
-  #panelHist, #panelFreq, #panelWho { margin-top: 10px; }
+  #panelHist, #panelBuild, #panelWho { margin-top: 10px; }
   .panel h3 { margin: 14px 0 6px; font: 800 15px var(--head); letter-spacing: .5px; }
   .panel h3:first-child { margin-top: 0; }
   .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
@@ -267,6 +267,28 @@
   html[data-theme="modern"] #login input, html[data-theme="modern"] #login textarea { background: #222; color: #eee; border: 1px solid #444; }
   html[data-theme="modern"] .acctInfo { color: #999; }
   html[data-theme="modern"] .skel { background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%); background-size: 200% 100%; }
+
+
+  /* budowle i wykres punktów */
+  .bp { padding: 8px 0 12px; border-bottom: 1px solid var(--rule); }
+  .bp:last-child { border-bottom: 0; }
+  .bph { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .bpn { font-weight: bold; font-size: 18px; }
+  .bpn::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; border: 1px solid #000; background: var(--c); }
+  .bpp { font-weight: 800; font-family: var(--head); }
+  .bpg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .bcl { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+  .bcc { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .bcv { flex: 1; text-align: center; font: 800 22px var(--head); }
+  .bcb { width: 38px; height: 38px; flex: none; padding: 0; border-radius: 10px; border: 2px solid var(--edge); background: var(--wood2); color: var(--btnText); font-size: 22px; line-height: 1; }
+  .bcb:active { transform: translateY(1px); }
+  .bcb:disabled { opacity: .3; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 14px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1px solid #000; margin-right: 5px; vertical-align: -1px; }
+  #ptsChart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  #ptsChart text { fill: currentColor; font: 10px var(--bodyf); opacity: .75; }
+  html[data-theme="modern"] .bcl { color: #999; }
+  html[data-theme="modern"] .bcb { background: #2a2a2a; color: #eee; border: 0; }
 
   /* dodatkowe motywy: same zmienne */
   html[data-theme="ocean"] {
@@ -413,14 +435,14 @@
   <div class="pad" id="pad"></div>
   <div class="tabs" id="statTabs">
     <button data-tab="hist" class="on">Ostatnie rzuty</button>
-    <button data-tab="freq">Rzuty</button>
+    <button data-tab="build">Budowle</button>
     <button data-tab="who">Kto co rzucił</button>
   </div>
   <div class="panel" id="panelHist"><table id="history">
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
   </table></div>
-  <div class="panel" id="panelFreq" hidden><table id="stats"></table></div>
+  <div class="panel" id="panelBuild" hidden><div id="buildBox"></div></div>
   <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
   <button class="btn end" id="end">KONIEC</button>
   <h2 style="margin-top:24px">Wygrane</h2>
@@ -429,6 +451,12 @@
   <div class="panel" style="margin-top:0">
     <div id="avgTime"></div>
     <div class="note">Czas liczy się od rzutu gracza do rzutu następnego. Ostatni ruch w grze się nie liczy.</div>
+  </div>
+  <h2 style="margin-top:24px">Punkty w grze</h2>
+  <div class="panel" style="margin-top:0">
+    <div id="ptsChart"></div>
+    <div class="legend" id="ptsLegend"></div>
+    <div class="note">Oś X to rzuty kością. Punkty: wieś 1, miasto 2, najdłuższa droga +2 (min. 5 dróg i najwięcej), największa armia +2 (min. 3 rycerze i najwięcej). Karty punktowe nie są liczone. Wykres jest tylko lokalny, nie trafia do bazy.</div>
   </div>
 </section>
 
@@ -713,14 +741,6 @@
     $('pad').appendChild(b);
   });
 
-  nums.forEach(n => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="n"></td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
-    tr.cells[0].textContent = n;
-    if (isHot(n)) tr.cells[0].classList.add('hot');
-    $('stats').appendChild(tr);
-  });
-
   // po zapisaniu rzutu kością blokada przycisków na 2 s (ochrona przed podwójnym stuknięciem)
   let padLocked = false, lockTimer = null;
   function lockPad(ms) {
@@ -794,7 +814,11 @@
 
   $('undo').onclick = () => {
     const last = state.rolls.pop();
-    if (last && last.n !== 'R') state.current = last.p;  // rycerz nie zmieniał tury
+    if (last && last.n !== 'R') {
+      state.current = last.p;  // rycerz nie zmieniał tury
+      const n = diceCount();   // zmiany budowli zrobione po cofniętym rzucie przesuwają się na ostatni zachowany rzut
+      (state.log || []).forEach(e => { if (e.x > n) e.x = n; });
+    }
     save(); render();
   };
 
@@ -802,6 +826,7 @@
   $('clear').onclick = () => {
     if (!confirm('Zacząć tę grę od nowa? Zapisane wygrane zostaną.')) return;
     state.rolls = [];
+    state.counts = null; state.log = [];
     state.current = state.first || 0;
     save(); render();
   };
@@ -971,16 +996,151 @@
       names.map(nm => all.players[nm].ms), names.map(nm => all.players[nm].moves)));
   }
 
+  // ---- budowle (drogi, wsie, miasta, rycerze) i punkty; tylko lokalnie w trwającej grze ----
+  const KINDS = ['Drogi', 'Wsie', 'Miasta', 'Rycerze'];
+  const BASE_COUNTS = [2, 0 + 2, 0, 0];   // na starcie każdy ma 2 drogi i 2 wsie
+  const diceCount = () => state.rolls.filter(r => r.n !== 'R').length;
+  function ensureBuild() {
+    if (!state.counts) state.counts = state.names.map(() => [...BASE_COUNTS]);
+    if (!state.log) state.log = [];
+  }
+  // zmiana licznika; zapisujemy ją z numerem rzutu kością, przy którym nastąpiła (oś X wykresu)
+  function bump(p, k, d) {
+    ensureBuild();
+    const v = Math.max(0, state.counts[p][k] + d);
+    if (v === state.counts[p][k]) return;
+    state.counts[p][k] = v;
+    state.log.push({ x: diceCount(), p, k, v });
+    save(); render();
+  }
+  // punkty po każdym rzucie kością (0..N), odtwarzane z dziennika zmian
+  function pointSeries() {
+    ensureBuild();
+    const c = state.names.map(() => [...BASE_COUNTS]);
+    let road = -1, army = -1;
+    // posiadacz bonusu zostaje, dopóki ktoś nie ma ściśle więcej; bez posiadacza bonus dostaje jedyny lider
+    const holder = (cur, k, min) => {
+      if (cur >= 0 && c[cur][k] >= min) {
+        let best = cur;
+        c.forEach((row, i) => { if (row[k] > c[best][k]) best = i; });
+        return best;
+      }
+      const mx = Math.max(...c.map(r => r[k]));
+      if (mx < min) return -1;
+      const tops = c.map((r, i) => r[k] === mx ? i : -1).filter(i => i >= 0);
+      return tops.length === 1 ? tops[0] : -1;
+    };
+    const snap = () => c.map((r, i) => r[1] + 2 * r[2] + (road === i ? 2 : 0) + (army === i ? 2 : 0));
+    const N = diceCount();
+    const series = [];
+    let ei = 0;
+    for (let x = 0; x <= N; x++) {
+      while (ei < state.log.length && state.log[ei].x <= x) {
+        const e = state.log[ei++];
+        c[e.p][e.k] = e.v;
+        road = holder(road, 0, 5);
+        army = holder(army, 3, 3);
+      }
+      series.push(snap());
+    }
+    return { series, final: series[N] };
+  }
+
+  function renderBuild() {
+    const box = $('buildBox');
+    box.textContent = '';
+    const pts = pointSeries().final;
+    state.names.forEach((name, p) => {
+      const blk = el('div', 'bp');
+      const head = el('div', 'bph');
+      const nm = el('span', 'bpn', name);
+      nm.style.setProperty('--c', pColor(p));
+      head.append(nm, el('span', 'bpp', pts[p] + ' pkt'));
+      const grid = el('div', 'bpg');
+      KINDS.forEach((label, k) => {
+        const cell = el('div', 'bc');
+        const ctl = el('div', 'bcc');
+        const minus = el('button', 'bcb', '−');
+        minus.setAttribute('aria-label', label + ' minus');
+        minus.disabled = state.counts[p][k] <= 0;
+        minus.onclick = () => bump(p, k, -1);
+        const plus = el('button', 'bcb', '+');
+        plus.setAttribute('aria-label', label + ' plus');
+        plus.onclick = () => bump(p, k, 1);
+        ctl.append(minus, el('span', 'bcv', state.counts[p][k]), plus);
+        cell.append(el('div', 'bcl', label), ctl);
+        grid.append(cell);
+      });
+      blk.append(head, grid);
+      box.append(blk);
+    });
+  }
+
+  // wykres liniowy (schodkowy): punkty graczy w funkcji liczby rzutów kością
+  function renderPoints() {
+    const { series, final } = pointSeries();
+    const N = series.length - 1;
+    const NS = 'http://www.w3.org/2000/svg';
+    const W = 360, H = 210, L = 28, R = 12, T = 12, B = 28;
+    const yMax = Math.max(10, ...series.map(r => Math.max(...r)));
+    const X = x => L + (N ? x / N : 0) * (W - L - R);
+    const Y = v => T + (1 - v / yMax) * (H - T - B);
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const add = (tag, attrs, text) => {
+      const e = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+      if (text !== undefined) e.textContent = text;
+      svg.append(e);
+      return e;
+    };
+    const yStep = yMax <= 12 ? 2 : 5;
+    for (let v = 0; v <= yMax; v += yStep) {
+      add('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'currentColor', 'stroke-opacity': v === 0 ? .5 : .15 });
+      add('text', { x: L - 5, y: Y(v) + 3, 'text-anchor': 'end' }, v);
+    }
+    add('line', { x1: L, x2: W - R, y1: Y(10), y2: Y(10), stroke: '#c1121f', 'stroke-dasharray': '4 3', 'stroke-opacity': .8 });
+    const xStep = N <= 10 ? 1 : N <= 30 ? 5 : N <= 100 ? 10 : 20;
+    for (let x = 0; x <= N; x += xStep) add('text', { x: X(x), y: H - B + 13, 'text-anchor': 'middle' }, x);
+    add('text', { x: (L + W - R) / 2, y: H - 3, 'text-anchor': 'middle' }, 'rzuty kością');
+    state.names.forEach((_, p) => {
+      const dy = (p - (state.names.length - 1) / 2) * 1.6;   // lekkie przesunięcie, żeby nakładające się linie były widoczne
+      let d = `M${X(0)} ${Y(series[0][p]) + dy}`;
+      for (let x = 1; x <= N; x++) {
+        if (series[x][p] !== series[x - 1][p]) d += ` H${X(x)} V${Y(series[x][p]) + dy}`;
+      }
+      d += ` H${X(N)}`;
+      add('path', { d, fill: 'none', stroke: '#1b1b1b', 'stroke-width': 4.5, 'stroke-linejoin': 'round', 'stroke-opacity': .7 });
+      add('path', { d, fill: 'none', stroke: pColor(p), 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+      add('circle', { cx: X(N), cy: Y(series[N][p]) + dy, r: 3.5, fill: pColor(p), stroke: '#1b1b1b' });
+    });
+    const box = $('ptsChart');
+    box.textContent = '';
+    box.append(svg);
+    const lg = $('ptsLegend');
+    lg.textContent = '';
+    state.names.forEach((name, p) => {
+      const item = el('span', '', ` ${name}: ${final[p]}`);
+      const dot = el('i');
+      dot.style.background = pColor(p);
+      item.prepend(dot);
+      lg.append(item);
+    });
+  }
+
   function renderGameStats(dice) {
     document.querySelectorAll('#statTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === statTab));
     $('panelHist').hidden = statTab !== 'hist';
-    $('panelFreq').hidden = statTab !== 'freq';
+    $('panelBuild').hidden = statTab !== 'build';
     $('panelWho').hidden = statTab !== 'who';
     if (statTab === 'who') {
       const per = state.names.map(() => ({}));
       dice.forEach(r => { per[r.p][r.n] = (per[r.p][r.n] || 0) + 1; });
       playerDist($('whoChart'), state.names.map((name, i) => ({ name, color: pColor(i), counts: per[i] })));
     }
+    ensureBuild();
+    if (statTab === 'build') renderBuild();
+    renderPoints();
     const sums = state.names.map(() => 0), cnt = state.names.map(() => 0);
     moveTimes(state.rolls).forEach(m => { sums[m.p] += m.ms; cnt[m.p]++; });
     hbars($('avgTime'), avgRows(state.names, state.names.map((_, i) => pColor(i)), sums, cnt));
@@ -1008,21 +1168,6 @@
       l.style.setProperty('--c', pColor(i));
       l.className = i === state.current ? 'lbl cur' : 'lbl';
       pl.appendChild(l);
-    });
-
-    // statystyki
-    const counts = Object.fromEntries(nums.map(n => [n, 0]));
-    dice.forEach(r => counts[r.n]++);
-    const total = dice.length;
-    const max = Math.max(1, ...Object.values(counts));
-    [...$('stats').rows].forEach((tr, i) => {
-      const n = nums[i], c = counts[n];
-      tr.cells[1].textContent = c;
-      const bar = tr.cells[2].firstChild;
-      bar.style.width = (c / max * 100) + '%';
-      bar.style.borderWidth = c ? '1px' : '0';
-      bar.className = 'bar' + (isHot(n) ? ' hot' : '');
-      tr.cells[3].textContent = (total ? Math.round(c / total * 100) : 0) + '%';
     });
 
     renderGameStats(dice);
