@@ -192,6 +192,44 @@
   html[data-theme="modern"] .wins td { border-bottom-color: #222; }
   html[data-theme="modern"] .wins td.w { font-family: inherit; font-weight: 600; }
 
+
+  /* taby, wykresy słupkowe */
+  .tabs { display: flex; gap: 6px; margin-top: 16px; }
+  .tabs button { flex: 1; padding: 10px 4px; font: inherit; font-size: 16px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
+  .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
+  .tabs + .panel { margin-top: 10px; }
+  .panel h3 { margin: 14px 0 6px; font: 800 15px var(--head); letter-spacing: .5px; }
+  .panel h3:first-child { margin-top: 0; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .hb { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .hb .l { width: 66px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+  .hb .l.hot { color: var(--red); }
+  .hb .track { flex: 1; }
+  .hb .fill { height: 14px; border-radius: 7px; background: var(--green); border: 1px solid var(--edge); transition: width .15s; }
+  .hb .fill.hot { background: var(--red); }
+  .hb .t { width: 74px; flex: none; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pd { display: flex; align-items: flex-end; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .pd:last-child { border-bottom: 0; }
+  .pd .nm { width: 76px; flex: none; font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; align-self: center; }
+  .pd .nm::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; border: 1px solid #000; background: var(--c); }
+  .pd .cols { flex: 1; display: flex; align-items: flex-end; gap: 2px; }
+  .pd .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+  .pd .v { font-size: 10px; color: var(--muted); height: 12px; line-height: 12px; }
+  .pd .bar2 { width: 100%; background: var(--c); border: 1px solid var(--edge); border-bottom: 0; border-radius: 2px 2px 0 0; }
+  .pd .n { font-size: 10px; margin-top: 2px; font-weight: bold; }
+  .pd .col.peak .n { color: var(--red); }
+  .pd .col.peak .v { color: var(--ink); font-weight: bold; }
+  html[data-theme="modern"] .tabs button { background: #2a2a2a; color: #aaa; border: 0; }
+  html[data-theme="modern"] .tabs button.on { background: #2f6fd0; color: #fff; box-shadow: none; }
+  html[data-theme="modern"] .note, html[data-theme="modern"] .hb .t, html[data-theme="modern"] .pd .v { color: #999; }
+  html[data-theme="modern"] .hb .l.hot { color: #ff6b5e; }
+  html[data-theme="modern"] .hb .fill { background: #4a90e2; border: 0; border-radius: 3px; }
+  html[data-theme="modern"] .hb .fill.hot { background: #ff6b5e; }
+  html[data-theme="modern"] .pd { border-bottom-color: #222; }
+  html[data-theme="modern"] .pd .col.peak .n { color: #ff6b5e; }
+  html[data-theme="modern"] .pd .col.peak .v { color: #eee; }
+  html[data-theme="modern"] .pd .bar2 { border: 0; border-radius: 2px 2px 0 0; }
+
   /* dodatkowe motywy: same zmienne */
   html[data-theme="ocean"] {
     --wood: #0d2b3e; --wood2: #14425c; --parch: #e2f3f6; --parch2: #c3e3ea; --ink: #0d2b3e;
@@ -300,6 +338,8 @@
   <button class="btn primary" id="start">Start</button>
   <h2 style="margin-top:24px">Wygrane</h2>
   <div class="panel" style="margin-top:0"><table class="wins"></table></div>
+  <h2 style="margin-top:24px">Statystyki wszystkich gier</h2>
+  <div class="panel" style="margin-top:0" id="allStats"></div>
 </section>
 
 <section id="game" hidden>
@@ -310,7 +350,12 @@
   </header>
   <div id="players"></div>
   <div class="pad" id="pad"></div>
-  <div class="panel"><table id="stats"></table></div>
+  <div class="tabs" id="statTabs">
+    <button data-tab="freq" class="on">Rzuty</button>
+    <button data-tab="who">Kto co rzucił</button>
+  </div>
+  <div class="panel" id="panelFreq"><table id="stats"></table></div>
+  <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
   <h2 style="margin-top:20px">Ostatnie rzuty</h2>
   <div class="panel" style="margin-top:0"><table id="history">
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
@@ -319,6 +364,11 @@
   <button class="btn end" id="end">KONIEC</button>
   <h2 style="margin-top:24px">Wygrane</h2>
   <div class="panel" style="margin-top:0"><table class="wins"></table></div>
+  <h2 style="margin-top:24px">Średni czas ruchu</h2>
+  <div class="panel" style="margin-top:0">
+    <div id="avgTime"></div>
+    <div class="note">Czas liczy się od rzutu gracza do rzutu następnego. Ostatni ruch w grze się nie liczy.</div>
+  </div>
 </section>
 
 <div id="knightModal" class="modal" hidden>
@@ -363,6 +413,7 @@
   const KEY = 'catan-noter-state';
   const WINS_KEY = 'catan-noter-wins';
   const SETUP_KEY = 'catan-noter-setup';
+  const STATS_KEY = 'catan-noter-stats';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
@@ -547,7 +598,7 @@
 
   function addRoll(n, t, p = state.current) {
     if (n !== 'R') lockPad(2000);
-    state.rolls.push({ p, n, t });
+    state.rolls.push({ p, n, t, ts: Date.now() });
     if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
     save(); render();
   }
@@ -652,6 +703,7 @@
   $('winCancel').onclick = () => { $('winModal').hidden = true; };
   $('winOk').onclick = () => {
     $('winModal').hidden = true;
+    mergeGameStats(state);
     if (winner !== 'none') {
       const name = state.names[winner];
       wins[name] = (wins[name] || 0) + 1;
@@ -666,10 +718,146 @@
     save(); render();
   };
 
+  // ---- czas ruchu i statystyki ----
+  // ruch gracza trwa od jego rzutu kością do rzutu następnego gracza (rycerz nie liczy się jako rzut);
+  // ostatni ruch w grze nie ma końca, więc nie jest liczony
+  function moveTimes(rolls) {
+    const d = rolls.filter(r => r.n !== 'R');
+    const out = [];
+    for (let i = 0; i < d.length - 1; i++) {
+      const a = d[i], b = d[i + 1];
+      if (typeof a.ts === 'number' && typeof b.ts === 'number' && b.ts >= a.ts) out.push({ p: a.p, ms: b.ts - a.ts });
+    }
+    return out;
+  }
+  function fmtTime(ms) {
+    const s = Math.round(ms / 1000);
+    return s < 60 ? s + ' s' : Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  // poziome słupki: rows = [{ label, value, text, color?, hot? }]
+  function hbars(box, rows) {
+    box.textContent = '';
+    const max = Math.max(...rows.map(r => r.value), 0);
+    rows.forEach(r => {
+      const row = el('div', 'hb');
+      const l = el('div', 'l' + (r.hot ? ' hot' : ''), r.label);
+      const track = el('div', 'track');
+      const fill = el('div', 'fill' + (r.hot ? ' hot' : ''));
+      fill.style.width = (max ? r.value / max * 100 : 0) + '%';
+      if (r.color) fill.style.background = r.color;
+      if (!r.value) fill.style.borderWidth = '0';
+      track.append(fill);
+      row.append(l, track, el('div', 't', r.text));
+      box.append(row);
+    });
+  }
+  // słupki pionowe 2–12 osobno dla każdego gracza: players = [{ name, color, counts }]
+  function playerDist(box, players) {
+    box.textContent = '';
+    players.forEach(pl => {
+      const max = Math.max(...nums.map(n => pl.counts[n] || 0), 0);
+      const row = el('div', 'pd');
+      const nm = el('div', 'nm', pl.name);
+      nm.style.setProperty('--c', pl.color);
+      const cols = el('div', 'cols');
+      nums.forEach(n => {
+        const c = pl.counts[n] || 0;
+        const col = el('div', 'col' + (max && c === max ? ' peak' : ''));
+        col.style.setProperty('--c', pl.color);
+        const bar = el('div', 'bar2');
+        bar.style.height = (max ? Math.round(c / max * 48) : 0) + 'px';
+        if (!c) bar.style.borderWidth = '0';
+        col.append(el('div', 'v', c || ''), bar, el('div', 'n', n));
+        cols.append(col);
+      });
+      row.append(nm, cols);
+      box.append(row);
+    });
+  }
+  function avgRows(names, colors, sums, counts) {
+    return names.map((name, i) => ({
+      label: name, color: colors[i],
+      value: counts[i] ? sums[i] / counts[i] : 0,
+      text: counts[i] ? fmtTime(sums[i] / counts[i]) : '—',
+    }));
+  }
+
+  // wyniki zakończonej gry dopisywane do statystyk wszystkich gier (zapisujemy tylko sumy: rzuty na gracza i czasy do średniej)
+  function loadStats() {
+    try {
+      const d = JSON.parse(localStorage.getItem(STATS_KEY));
+      if (d && d.players && typeof d.players === 'object') return d;
+    } catch (e) {}
+    return { games: 0, players: {} };
+  }
+  function mergeGameStats(st) {
+    const all = loadStats();
+    all.games = (all.games || 0) + 1;
+    const P = i => all.players[st.names[i]] || (all.players[st.names[i]] = { rolls: {}, ms: 0, moves: 0 });
+    st.names.forEach((n, i) => { P(i).color = pColor(i); });
+    st.rolls.filter(r => r.n !== 'R').forEach(r => { const p = P(r.p); p.rolls[r.n] = (p.rolls[r.n] || 0) + 1; });
+    moveTimes(st.rolls).forEach(m => { const p = P(m.p); p.ms += m.ms; p.moves += 1; });
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
+  let statTab = 'freq';
+  document.querySelectorAll('#statTabs button').forEach(b => {
+    b.onclick = () => { statTab = b.dataset.tab; render(); };
+  });
+
+  const plGames = n => n === 1 ? 'gra' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'gry' : 'gier';
+
+  function renderAllStats() {
+    const box = $('allStats');
+    box.textContent = '';
+    const all = loadStats();
+    const names = Object.keys(all.players);
+    if (!all.games) { box.append(el('div', '', 'Brak danych. Statystyki pojawią się po zakończeniu pierwszej gry.')); return; }
+
+    const totals = Object.fromEntries(nums.map(n => [n, 0]));
+    names.forEach(nm => nums.forEach(n => { totals[n] += all.players[nm].rolls[n] || 0; }));
+    const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+
+    box.append(el('h3', '', `Co najczęściej leci (${all.games} ${plGames(all.games)}, ${sum} rzutów)`));
+    const b1 = el('div'); box.append(b1);
+    hbars(b1, nums.map(n => ({ label: String(n), value: totals[n], hot: isHot(n),
+      text: totals[n] + ' (' + (sum ? Math.round(totals[n] / sum * 100) : 0) + '%)' })));
+
+    box.append(el('h3', '', 'Co komu najczęściej leci'));
+    const b2 = el('div'); box.append(b2);
+    playerDist(b2, names.map(nm => ({ name: nm, color: all.players[nm].color || '#888', counts: all.players[nm].rolls })));
+
+    box.append(el('h3', '', 'Średni czas ruchu'));
+    const b3 = el('div'); box.append(b3);
+    hbars(b3, avgRows(names, names.map(nm => all.players[nm].color || '#888'),
+      names.map(nm => all.players[nm].ms), names.map(nm => all.players[nm].moves)));
+  }
+
+  function renderGameStats(dice) {
+    document.querySelectorAll('#statTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === statTab));
+    $('panelFreq').hidden = statTab !== 'freq';
+    $('panelWho').hidden = statTab !== 'who';
+    if (statTab === 'who') {
+      const per = state.names.map(() => ({}));
+      dice.forEach(r => { per[r.p][r.n] = (per[r.p][r.n] || 0) + 1; });
+      playerDist($('whoChart'), state.names.map((name, i) => ({ name, color: pColor(i), counts: per[i] })));
+    }
+    const sums = [0, 0, 0, 0], cnt = [0, 0, 0, 0];
+    moveTimes(state.rolls).forEach(m => { sums[m.p] += m.ms; cnt[m.p]++; });
+    hbars($('avgTime'), avgRows(state.names, state.names.map((_, i) => pColor(i)), sums, cnt));
+  }
+
   function render() {
     $('setup').hidden = !!state;
     $('game').hidden = !state;
     renderWins();
+    renderAllStats();
     if (!state) return;
 
     const dice = state.rolls.filter(r => r.n !== 'R');
@@ -701,6 +889,8 @@
       bar.className = 'bar' + (isHot(n) ? ' hot' : '');
       tr.cells[3].textContent = (total ? Math.round(c / total * 100) : 0) + '%';
     });
+
+    renderGameStats(dice);
 
     // historia (najnowsze na górze)
     const body = $('history').tBodies[0];
