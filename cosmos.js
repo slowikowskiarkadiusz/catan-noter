@@ -3,8 +3,10 @@
 // UWAGA: kto zna ten klucz, ma pełny dostęp do całego konta Cosmos. Nie commituj go do publicznego repo.
 //
 // Układ danych:
-//   kontener "catan"    (klucz partycji np. /accountid) – jeden dokument na konto: id = accountid = hash klucza konta
-//   kontener "settings" (klucz partycji /id)            – dokument "admin" (hash hasła admina) i "counter" (numer następnego konta)
+//   kontener "catan" (klucz partycji np. /accountid), w nim osobne dokumenty:
+//     konto:   id = accountid = hash klucza konta
+//     "admin": hash hasła admina
+//     "counter": numer następnego konta
 (function () {
   const enc = new TextEncoder();
   const API_VERSION = '2018-12-31';
@@ -45,11 +47,10 @@
   // Dokument bez pól systemowych Cosmosa (_rid, _self, _etag, _ts, ...)
   const strip = doc => Object.fromEntries(Object.entries(doc).filter(([k]) => !k.startsWith('_')));
 
-  // cfg: { connectionString, database ('' = wykryj), container, settingsContainer }
+  // cfg: { connectionString, database ('' = wykryj), container }
   function connect(cfg) {
     const { endpoint, key } = parseConnectionString(cfg.connectionString);
     const container = cfg.container || 'catan';
-    const settingsName = cfg.settingsContainer || 'settings';
     let hmacKey = null;
     let ready = null;   // { db, pkProp } po wykryciu bazy i klucza partycji
 
@@ -113,7 +114,7 @@
       throw new CosmosError(404, `Nie znaleziono kontenera „${container}” (bazy na koncie: ${dbs.map(d => d.id).join(', ') || 'brak'})`);
     }
 
-    // operacje na dokumentach w wybranym kontenerze; pk = nazwa pola klucza partycji (dla „settings” zawsze id)
+    // operacje na dokumentach w wybranym kontenerze; pk = nazwa pola klucza partycji
     function docOps(containerName, pkPropFn) {
       const link = async id => { const { db } = await init(); return `${collLink(db, containerName)}/docs/${id}`; };
       const withPk = async doc => { const p = await pkPropFn(); return p === 'id' ? doc : { ...doc, [p]: doc.id }; };
@@ -130,21 +131,12 @@
         },
       };
     }
+    // konta, hasło admina i licznik leżą w jednym kontenerze (osobne dokumenty, accountid = id)
     const accounts = docOps(container, async () => (await init()).pkProp);
-    const settings = docOps(settingsName, async () => 'id');
-
-    async function ensureSettingsContainer() {
-      const { db } = await init();
-      const link = collLink(db, settingsName);
-      if (await request('GET', 'colls', link, link, { allow404: true })) return;
-      try {
-        await request('POST', 'colls', `dbs/${db}`, `dbs/${db}/colls`, { body: { id: settingsName, partitionKey: { paths: ['/id'], kind: 'Hash' } } });
-      } catch (e) { if (e.status !== 409) throw e; }
-    }
+    const settings = accounts;
 
     // ---- hasło admina ----
     async function setAdminPassword(password) {
-      await ensureSettingsContainer();
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const doc = {
         id: 'admin', type: 'admin', algo: 'PBKDF2-SHA256', iterations: ADMIN_ITERATIONS,
@@ -166,11 +158,11 @@
       // zapis dokumentu konta z kontrolą współbieżności (ETag); przy konflikcie rzuca CosmosError(412)
       saveAccount: doc => accounts.replace({ ...doc, updatedAt: new Date().toISOString() }, doc._etag),
 
-      // Nowe konto. Hasło admina jest w kontenerze „settings”. Jeśli go jeszcze nie ma (pierwsze uruchomienie),
-      // po potwierdzeniu (confirmSetup) wpisane hasło zostaje hasłem admina, a kontener „settings” zostaje założony.
+      // Nowe konto. Hash hasła admina jest w dokumencie "admin". Jeśli go jeszcze nie ma (pierwsze uruchomienie),
+      // po potwierdzeniu (confirmSetup) wpisane hasło zostaje hasłem admina.
       async createAccount(secret, adminSecret, confirmSetup) {
         if (!adminSecret) throw new CosmosError(403, 'Podaj klucz admina');
-        const admin = await settings.get('admin');   // null, gdy brak dokumentu albo całego kontenera
+        const admin = await settings.get('admin');   // null, gdy dokumentu jeszcze nie ma
         if (!admin) {
           if (!confirmSetup || !(await confirmSetup())) throw new CosmosError(403, 'Anulowano');
           await setAdminPassword(adminSecret);
@@ -181,7 +173,7 @@
         const id = await sha256Hex('catan-noter:' + secret);
         if (await accounts.get(id)) throw new CosmosError(409, 'Konto z takim kluczem już istnieje');
 
-        // numer konta z licznika w „settings” (ETag chroni przed jednoczesnym zakładaniem kont)
+        // numer konta z dokumentu "counter" (ETag chroni przed jednoczesnym zakładaniem kont)
         let number = null;
         for (let attempt = 0; attempt < 4 && number === null; attempt++) {
           let counter = await settings.get('counter');

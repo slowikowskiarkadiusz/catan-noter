@@ -1072,7 +1072,7 @@
 
   // konfiguracja: najpierw cosmos-config.js, potem connection string zapisany na tym urządzeniu
   function makeClient() {
-    const cfg = Object.assign({ database: '', container: 'catan', settingsContainer: 'settings' }, window.COSMOS_CONFIG || {});
+    const cfg = Object.assign({ database: '', container: 'catan' }, window.COSMOS_CONFIG || {});
     let cs = cfg.connectionString;
     let local = false;
     if (!cs) { try { cs = localStorage.getItem(CONN_KEY) || ''; local = true; } catch (e) {} }
@@ -1163,7 +1163,7 @@
     try {
       const doc = await client.createAccount(key, $('adminKey').value, async () => {
         hideLoading();
-        const ok = confirm('W bazie nie ma jeszcze hasła admina. Ustawić wpisane hasło jako hasło admina (zostanie zapisane jako hash w kontenerze „settings”)?');
+        const ok = confirm('W bazie nie ma jeszcze hasła admina. Ustawić wpisane hasło jako hasło admina (zostanie zapisane jako hash)?');
         showLoading('Tworzenie konta…');
         return ok;
       });

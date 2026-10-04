@@ -11,5 +11,4 @@ window.COSMOS_CONFIG = {
   connectionString: COSMOS_CONNECTION_STRING,
   database: '',                  // puste = aplikacja sama znajdzie bazę, w której jest kontener "container"
   container: 'catan',            // konta i statystyki, klucz partycji np. /accountid
-  settingsContainer: 'settings', // hasło admina (hash) i licznik numerów kont, klucz partycji /id
 };

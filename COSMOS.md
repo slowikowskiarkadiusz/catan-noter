@@ -3,12 +3,14 @@
 Aplikacja łączy się z Cosmos DB (NoSQL API) bezpośrednio z przeglądarki, bez backendu.
 
 ## Układ danych
-- Kontener **`catan`** (klucz partycji np. `/accountid`): jeden dokument na konto. `id` i `accountid` to hash SHA-256 z `"catan-noter:" + klucz konta` (sam klucz nie jest zapisywany). Aplikacja sama wykrywa nazwę bazy i pole klucza partycji.
-- Kontener **`settings`** (klucz partycji `/id`), tworzony przez aplikację przy ustawianiu hasła admina: dokument `admin` (hash PBKDF2-SHA256 z solą) i dokument `counter` (numer następnego konta).
+Wszystko jest w jednym kontenerze **`catan`** (klucz partycji np. `/accountid`), w osobnych dokumentach:
+- konto: `id` i `accountid` to hash SHA-256 z `"catan-noter:" + klucz konta` (sam klucz nie jest zapisywany),
+- `admin`: hash hasła admina (PBKDF2-SHA256 z solą),
+- `counter`: numer następnego konta.
+Aplikacja sama wykrywa nazwę bazy i pole klucza partycji.
 
 ## Co zrobić w Azure
 1. W koncie Cosmos: **Settings → CORS**, dodać `https://slowikowskiarkadiusz.github.io`.
-2. Uwaga na koszty: nowy kontener w bazie bez współdzielonej przepustowości dostaje domyślnie własną przepustowość (zwykle min. 400 RU/s). Na koncie serverless albo w bazie ze współdzieloną przepustowością nie ma dodatkowego kosztu. Jeśli wolisz, załóż kontener `settings` ręcznie (klucz partycji `/id`) i ustaw przepustowość sam.
 
 ## Connection string
 Opcja 1: stała `COSMOS_CONNECTION_STRING` na górze pliku `cosmos-config.js` (wpisany na stałe; plik jest publiczny, więc klucz też, i po zregenerowaniu klucza trzeba go podmienić).
