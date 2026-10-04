@@ -203,7 +203,7 @@
   .tabs { display: flex; gap: 6px; margin-top: 16px; }
   .tabs button { flex: 1; padding: 10px 2px; font: inherit; font-size: 14px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
   .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
-  #panelHist, #panelBuild, #panelWho { margin-top: 10px; }
+  #panelHist, #panelBuild, #panelFreq, #panelWho { margin-top: 10px; }
   .panel h3 { margin: 14px 0 6px; font: 800 15px var(--head); letter-spacing: .5px; }
   .panel h3:first-child { margin-top: 0; }
   .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
@@ -434,17 +434,22 @@
     <button class="btn danger" id="clear">Wyczyść</button>
   </header>
   <div id="players"></div>
-  <div class="pad" id="pad"></div>
+  <div class="tabs" id="topTabs" style="margin-top:4px">
+    <button data-tab="dice" class="on">Rzuty kością</button>
+    <button data-tab="build">Budowle</button>
+  </div>
+  <div class="pad" id="pad" style="margin-top:10px"></div>
+  <div class="panel" id="panelBuild" hidden><div id="buildBox"></div></div>
   <div class="tabs" id="statTabs">
     <button data-tab="hist" class="on">Ostatnie rzuty</button>
-    <button data-tab="build">Budowle</button>
+    <button data-tab="freq">Rzuty</button>
     <button data-tab="who">Kto co rzucił</button>
   </div>
   <div class="panel" id="panelHist"><table id="history">
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
   </table></div>
-  <div class="panel" id="panelBuild" hidden><div id="buildBox"></div></div>
+  <div class="panel" id="panelFreq" hidden><div id="freqBox"></div></div>
   <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
   <button class="btn end" id="end">KONIEC</button>
   <h2 style="margin-top:24px">Wygrane</h2>
@@ -972,6 +977,10 @@
   }
 
   let statTab = 'hist';
+  let topTab = 'dice';
+  document.querySelectorAll('#topTabs button').forEach(b => {
+    b.onclick = () => { topTab = b.dataset.tab; render(); };
+  });
   document.querySelectorAll('#statTabs button').forEach(b => {
     b.onclick = () => { statTab = b.dataset.tab; render(); };
   });
@@ -1150,15 +1159,26 @@
   function renderGameStats(dice) {
     document.querySelectorAll('#statTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === statTab));
     $('panelHist').hidden = statTab !== 'hist';
-    $('panelBuild').hidden = statTab !== 'build';
+    $('panelFreq').hidden = statTab !== 'freq';
     $('panelWho').hidden = statTab !== 'who';
+    if (statTab === 'freq') {
+      const counts = Object.fromEntries(nums.map(n => [n, 0]));
+      dice.forEach(r => counts[r.n]++);
+      const total = dice.length;
+      hbars($('freqBox'), nums.map(n => ({ label: String(n), value: counts[n], hot: isHot(n),
+        text: counts[n] + ' (' + (total ? Math.round(counts[n] / total * 100) : 0) + '%)' })));
+    }
     if (statTab === 'who') {
       const per = state.names.map(() => ({}));
       dice.forEach(r => { per[r.p][r.n] = (per[r.p][r.n] || 0) + 1; });
       playerDist($('whoChart'), state.names.map((name, i) => ({ name, color: pColor(i), counts: per[i] })));
     }
+    // górny przełącznik: przyciski rzutów kością albo liczniki budowli
+    document.querySelectorAll('#topTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === topTab));
+    $('pad').hidden = topTab !== 'dice';
+    $('panelBuild').hidden = topTab !== 'build';
     ensureBuild();
-    if (statTab === 'build') renderBuild();
+    if (topTab === 'build') renderBuild();
     renderPoints();
     const sums = state.names.map(() => 0), cnt = state.names.map(() => 0);
     moveTimes(state.rolls).forEach(m => { sums[m.p] += m.ms; cnt[m.p]++; });
