@@ -65,6 +65,8 @@
   html[data-theme="modern"] .colorList button.sel { border-color: #2f6fd0; }
   html[data-theme="modern"] .nameRow .dot { box-shadow: 0 0 0 2px #444; }
   .nameRow input[type=text] { flex: 1; }
+  .nameRow .rm { width: 34px; height: 34px; flex: none; padding: 0; border-radius: 8px; border: 2px solid var(--edge); background: var(--danger); color: #fff; font-size: 17px; line-height: 1; }
+  .nameRow .rm:disabled { opacity: .3; }
   .nameRow input[type=radio] { width: 24px; height: 24px; accent-color: var(--green); }
   .radios { display: flex; gap: 8px; }
   .radios label { flex: 1; }
@@ -389,6 +391,7 @@
   <div class="subtitle" style="text-align:center;color:var(--soft)">rzuty kością</div>
   <h2>Gracze <small>(kółko = pierwszy rzuca)</small></h2>
   <div id="nameInputs"></div>
+  <button class="btn" id="addPlayer" style="width:100%;margin-bottom:6px">+ Dodaj gracza</button>
   <h2>Gra</h2>
   <div class="radios">
     <label><input type="radio" name="game" value="1" checked><span>1</span></label>
@@ -510,7 +513,7 @@
   let client = null;      // klient Cosmos DB
   let wins = {};          // wygrane: { imię: liczba } — „Wyczyść” ich nie rusza
 
-  const validGame = s => (s && Array.isArray(s.names) && s.names.length === 4 && Array.isArray(s.rolls)) ? s : null;
+  const validGame = s => (s && Array.isArray(s.names) && s.names.length >= 2 && s.names.length <= 4 && Array.isArray(s.rolls)) ? s : null;
 
   // ---- zapis do Cosmos DB: zmiany łączone w jeden zapis ~0,5 s po ostatniej zmianie ----
   let saveTimer = null, retryTimer = null, saving = false, dirty = false;
@@ -559,6 +562,7 @@
   }
   addEventListener('online', flush);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && dirty) flush(); });
+  addEventListener('pagehide', () => { if (dirty) flush(); });
 
   function save() { if (!acct) return; acct.game = state; touch(); }
   function saveWins() { if (!acct) return; acct.wins = wins; capObject(acct.wins, 40, n => acct.wins[n]); touch(); }
@@ -587,82 +591,101 @@
   }
 
   // ---- setup ----
-  let chosen = [...DEFAULT_COLORS];
-  const dots = [], lists = [];
-  const nameInputs = DEFAULT_NAMES.map((n, k) => {
-    const wrap = document.createElement('div');
-    const row = document.createElement('div');
-    row.className = 'nameRow';
-    const dot = document.createElement('button');
-    dot.className = 'dot';
-    dot.setAttribute('aria-label', 'Kolor gracza');
-    const i = document.createElement('input');
-    i.type = 'text'; i.value = n; i.maxLength = 20;
-    const lab = document.createElement('label');
-    const r = document.createElement('input');
-    r.type = 'radio'; r.name = 'first'; r.value = k; r.checked = k === 0;
-    lab.append(r);
-    row.append(dot, i, lab);
-    const list = document.createElement('div');
-    list.className = 'colorList';
-    list.hidden = true;
-    dot.onclick = () => {
-      const open = list.hidden;
-      lists.forEach(l => { l.hidden = true; });
-      if (open) { fillColorList(k); list.hidden = false; }
-    };
-    wrap.append(row, list);
-    $('nameInputs').appendChild(wrap);
-    dots.push(dot); lists.push(list);
-    return i;
-  });
+  const MIN_PLAYERS = 2, MAX_PLAYERS = 4;
+  // gracze na ekranie startowym (2–4): imiona, kolory, kto rzuca pierwszy
+  let sp = { names: [...DEFAULT_NAMES], colors: [...DEFAULT_COLORS], first: 0 };
+  let openColor = -1;
 
-  // dropdown koloru (ten sam kolor może mieć kilku graczy)
-  function fillColorList(k) {
-    const list = lists[k];
-    list.textContent = '';
+  const nextDefaultName = () => DEFAULT_NAMES.find(n => !sp.names.some(x => x.trim() === n)) || 'Gracz ' + (sp.names.length + 1);
+  const nextDefaultColor = () => COLORS.map(c => c.hex).find(h => !sp.colors.includes(h)) || COLORS[sp.names.length % COLORS.length].hex;
+
+  function colorList(k) {
+    const list = el('div', 'colorList');
     COLORS.forEach(c => {
-      const b = document.createElement('button');
-      const sw = document.createElement('i');
+      const b = el('button');
+      const sw = el('i');
       sw.style.background = c.hex;
       b.append(sw, c.name);
-      if (chosen[k] === c.hex) b.className = 'sel';
-      b.onclick = () => { chosen[k] = c.hex; paintDots(); saveSetup(); list.hidden = true; };
-      list.appendChild(b);
+      if (sp.colors[k] === c.hex) b.className = 'sel';
+      b.onclick = () => { sp.colors[k] = c.hex; openColor = -1; saveSetup(); renderSetup(); };   // ten sam kolor może mieć kilku graczy
+      list.append(b);
     });
+    return list;
   }
-  function paintDots() { dots.forEach((d, k) => { d.style.background = chosen[k]; }); }
-  paintDots();
+  function renderSetup() {
+    const box = $('nameInputs');
+    box.textContent = '';
+    sp.names.forEach((name, k) => {
+      const wrap = el('div');
+      const row = el('div', 'nameRow');
+      const dot = el('button', 'dot');
+      dot.setAttribute('aria-label', 'Kolor gracza');
+      dot.style.background = sp.colors[k];
+      dot.onclick = () => { openColor = openColor === k ? -1 : k; renderSetup(); };
+      const input = el('input');
+      input.type = 'text'; input.value = name; input.maxLength = 20;
+      input.oninput = () => { sp.names[k] = input.value; saveSetup(); };
+      const lab = el('label');
+      const r = el('input');
+      r.type = 'radio'; r.name = 'first'; r.checked = k === sp.first;
+      r.onchange = () => { sp.first = k; saveSetup(); };
+      lab.append(r);
+      const rm = el('button', 'rm', '✕');
+      rm.setAttribute('aria-label', 'Usuń gracza');
+      rm.disabled = sp.names.length <= MIN_PLAYERS;
+      rm.onclick = () => removePlayer(k);
+      row.append(dot, input, lab, rm);
+      wrap.append(row);
+      if (openColor === k) wrap.append(colorList(k));
+      box.append(wrap);
+    });
+    $('addPlayer').hidden = sp.names.length >= MAX_PLAYERS;
+  }
+  function removePlayer(k) {
+    if (sp.names.length <= MIN_PLAYERS) return;
+    sp.names.splice(k, 1);
+    sp.colors.splice(k, 1);
+    if (sp.first === k) sp.first = 0; else if (sp.first > k) sp.first--;
+    openColor = -1;
+    saveSetup(); renderSetup();
+  }
+  $('addPlayer').onclick = () => {
+    if (sp.names.length >= MAX_PLAYERS) return;
+    sp.names.push(nextDefaultName());
+    sp.colors.push(nextDefaultColor());
+    saveSetup(); renderSetup();
+  };
 
-  // ustawienia startowe (imiona, kolory, pierwszy gracz, numer gry) zapisywane w koncie, żeby nie znikały po odświeżeniu
+  // ustawienia startowe (gracze, kolory, pierwszy gracz, numer gry) zapisywane w koncie, żeby nie znikały po odświeżeniu
   function saveSetup() {
     if (!acct) return;
     acct.setup = {
-      names: nameInputs.map(i => i.value),
-      colors: chosen,
-      first: +document.querySelector('input[name=first]:checked').value,
+      names: sp.names,
+      colors: sp.colors,
+      first: sp.first,
       game: +document.querySelector('input[name=game]:checked').value,
     };
     touch();
   }
   function applySetup(d) {
     if (!d) return;
-    if (Array.isArray(d.names)) d.names.slice(0, 4).forEach((n, k) => { if (typeof n === 'string') nameInputs[k].value = n; });
-    if (Array.isArray(d.colors) && d.colors.length === 4) chosen = d.colors.map((c, k) => typeof c === 'string' ? c : DEFAULT_COLORS[k]);
-    const f = document.querySelector(`input[name=first][value="${d.first}"]`);
-    if (f) f.checked = true;
+    if (Array.isArray(d.names) && d.names.length >= MIN_PLAYERS && d.names.length <= MAX_PLAYERS && d.names.every(n => typeof n === 'string')) {
+      sp.names = [...d.names];
+      sp.colors = d.names.map((_, k) => (Array.isArray(d.colors) && typeof d.colors[k] === 'string') ? d.colors[k] : (DEFAULT_COLORS[k] || COLORS[k % COLORS.length].hex));
+      sp.first = Number.isInteger(d.first) && d.first >= 0 && d.first < sp.names.length ? d.first : 0;
+    }
     const g = document.querySelector(`input[name=game][value="${d.game}"]`);
     if (g) g.checked = true;
-    paintDots();
+    openColor = -1;
+    renderSetup();
   }
-  $('setup').addEventListener('input', saveSetup);
-  $('setup').addEventListener('change', saveSetup);
+  $('setup').addEventListener('change', e => { if (e.target.name === 'game') saveSetup(); });
+  renderSetup();
 
   $('start').onclick = () => {
-    const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
+    const names = sp.names.map((n, k) => n.trim() || DEFAULT_NAMES[k] || 'Gracz ' + (k + 1));
     const game = +document.querySelector('input[name=game]:checked').value;
-    const first = +document.querySelector('input[name=first]:checked').value;
-    state = { names, game, first, colors: [...chosen], current: first, rolls: [] };
+    state = { names, game, first: sp.first, colors: [...sp.colors], current: sp.first, rolls: [] };
     save(); render();
   };
 
@@ -703,7 +726,7 @@
   function addRoll(n, t, p = state.current) {
     if (n !== 'R') lockPad(2000);
     state.rolls.push({ p, n, t, ts: Date.now() });
-    if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
+    if (n !== 'R') state.current = (state.current + 1) % state.names.length;  // rycerz nie kończy kolejki rzutów
     save(); render();
   }
 
@@ -711,7 +734,7 @@
   function askKnight() {
     const box = $('knightWho');
     box.textContent = '';
-    const cur = state.current, prev = (cur + 3) % 4;
+    const cur = state.current, prev = (cur + state.names.length - 1) % state.names.length;
     [[prev, 'Poprzedni'], [cur, 'Obecny']].forEach(([i, label]) => {
       const b = document.createElement('button');
       b.append(label + ':');
@@ -739,8 +762,9 @@
     const base = last ? last.t : who;
     const step = last ? 1 : state.game;
     candidates = [];
-    for (let k = 0; k < 4; k++) {
-      const i = (base + step + k) % 4;
+    const N = state.names.length;
+    for (let k = 0; k < N; k++) {
+      const i = (base + step + k) % N;
       if (i !== who) candidates.push(i);
     }
     ci = 0;
@@ -814,9 +838,11 @@
       saveWins();
     }
     // koniec gry: wróć do ustawień z tymi samymi imionami
-    state.names.forEach((n, i) => { nameInputs[i].value = n; });
-    chosen = state.colors ? [...state.colors] : [...DEFAULT_COLORS];
-    paintDots();
+    sp.names = [...state.names];
+    sp.colors = state.names.map((_, i) => (state.colors && state.colors[i]) || DEFAULT_COLORS[i] || COLORS[i % COLORS.length].hex);
+    sp.first = state.first < sp.names.length ? (state.first || 0) : 0;
+    openColor = -1;
+    renderSetup();
     saveSetup();
     state = null;
     save(); render();
@@ -946,7 +972,7 @@
       dice.forEach(r => { per[r.p][r.n] = (per[r.p][r.n] || 0) + 1; });
       playerDist($('whoChart'), state.names.map((name, i) => ({ name, color: pColor(i), counts: per[i] })));
     }
-    const sums = [0, 0, 0, 0], cnt = [0, 0, 0, 0];
+    const sums = state.names.map(() => 0), cnt = state.names.map(() => 0);
     moveTimes(state.rolls).forEach(m => { sums[m.p] += m.ms; cnt[m.p]++; });
     hbars($('avgTime'), avgRows(state.names, state.names.map((_, i) => pColor(i)), sums, cnt));
   }
