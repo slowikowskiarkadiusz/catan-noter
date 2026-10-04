@@ -14,6 +14,10 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # gałąź z wersją korzystającą z Cosmos DB; publikowana pod /db/
+  DB_BRANCH: claude/iphone-html-js-app-7ueqkj
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,14 +26,34 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stamp build version
+      - name: Checkout DB version
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: ${{ env.DB_BRANCH }}
+          path: _db
+      - name: Stamp build versions and assemble site
         run: |
+          mkdir -p site
+          # strona główna (main)
           V=${GITHUB_SHA::7}
           sed -i "s/const BUILD = 'dev'/const BUILD = '$V'/" index.html
-          echo "$V" > version.txt
+          sed -i "s/?v=dev/?v=$V/g" index.html
+          cp index.html site/
+          echo "$V" > site/version.txt
+          # wersja z bazą Cosmos DB w /db/ (jeśli gałąź istnieje)
+          if [ -f _db/index.html ]; then
+            D=$(git -C _db rev-parse --short HEAD)
+            sed -i "s/const BUILD = 'dev'/const BUILD = '$D'/" _db/index.html
+            sed -i "s/?v=dev/?v=$D/g" _db/index.html
+            mkdir -p site/db
+            cp _db/index.html site/db/
+            for f in cosmos.js cosmos-config.js; do [ -f "_db/$f" ] && cp "_db/$f" site/db/; done
+            echo "$D" > site/db/version.txt
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4
