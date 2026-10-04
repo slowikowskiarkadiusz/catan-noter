@@ -271,6 +271,9 @@
 
   /* przesuwanie palcem po zawartości tabów */
   #pad, #panelBuild, #panelHist, #panelFreq, #panelWho { touch-action: pan-y pinch-zoom; }
+  /* animacja wjazdu nie może poszerzać strony (iOS wtedy lekko zmienia skalę): zawartość jest przycięta do własnego kontenera */
+  .sw { overflow: hidden; padding-bottom: 8px; margin-bottom: -8px; }
+  body { overflow-x: clip; }
   @keyframes slidel { from { transform: translateX(28px); opacity: .25; } to { transform: none; opacity: 1; } }
   @keyframes slider { from { transform: translateX(-28px); opacity: .25; } to { transform: none; opacity: 1; } }
   .slide-l { animation: slidel .22s ease-out; }
@@ -445,19 +448,23 @@
     <button data-tab="dice" class="on">Rzuty kością</button>
     <button data-tab="build">Budowle</button>
   </div>
-  <div class="pad" id="pad" style="margin-top:10px"></div>
-  <div class="panel" id="panelBuild" hidden><div id="buildBox"></div></div>
+  <div class="sw">
+    <div class="pad" id="pad" style="margin-top:10px"></div>
+    <div class="panel" id="panelBuild" hidden><div id="buildBox"></div></div>
+  </div>
   <div class="tabs" id="statTabs">
     <button data-tab="hist" class="on">Ostatnie rzuty</button>
     <button data-tab="freq">Rzuty</button>
     <button data-tab="who">Kto co rzucił</button>
   </div>
-  <div class="panel" id="panelHist"><table id="history">
-    <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
-    <tbody></tbody>
-  </table></div>
-  <div class="panel" id="panelFreq" hidden><div id="freqBox"></div></div>
-  <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
+  <div class="sw">
+    <div class="panel" id="panelHist"><table id="history">
+      <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="panel" id="panelFreq" hidden><div id="freqBox"></div></div>
+    <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
+  </div>
   <button class="btn end" id="end">KONIEC</button>
   <h2 style="margin-top:24px">Wygrane</h2>
   <div class="panel" style="margin-top:0"><table class="wins"></table></div>
