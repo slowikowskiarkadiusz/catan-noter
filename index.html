@@ -276,6 +276,8 @@
   .bpn { font-weight: bold; font-size: 18px; }
   .bpn::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; border: 1px solid #000; background: var(--c); }
   .bpp { font-weight: 800; font-family: var(--head); }
+  .tags { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 8px; }
+  .tags b { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 8px; background: var(--gold); color: #1b1b1b; white-space: nowrap; }
   .bpg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
   .bcl { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
   .bcc { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
@@ -456,7 +458,7 @@
   <div class="panel" style="margin-top:0">
     <div id="ptsChart"></div>
     <div class="legend" id="ptsLegend"></div>
-    <div class="note">Oś X to rzuty kością. Punkty: wieś 1, miasto 2, najdłuższa droga +2 (min. 5 dróg i najwięcej), największa armia +2 (min. 3 rycerze i najwięcej). Karty punktowe nie są liczone. Wykres jest tylko lokalny, nie trafia do bazy.</div>
+    <div class="note">Oś X to rzuty kością. Punkty: wieś 1, miasto 2, karta punktu zwycięstwa 1, najdłuższa droga +2 (min. 5 dróg, przejmuje ten, kto ma więcej), największa armia +2 (min. 3 rycerze, przejmuje ten, kto ma więcej). Sam przebieg wykresu jest tylko lokalny, do bazy trafia średnia punktów na grę.</div>
   </div>
 </section>
 
@@ -960,6 +962,11 @@
     st.names.forEach((n, i) => { P(i).color = pColor(i); });
     st.rolls.filter(r => r.n !== 'R').forEach(r => { const p = P(r.p); p.rolls[r.n] = (p.rolls[r.n] || 0) + 1; });
     moveTimes(st.rolls).forEach(m => { const p = P(m.p); p.ms += m.ms; p.moves += 1; });
+    // punkty końcowe tylko z gier, w których używano liczników budowli (inaczej wyszłyby same punkty startowe)
+    if (st.log && st.log.length) {
+      const final = pointSeries().final;
+      st.names.forEach((n, i) => { const p = P(i); p.pts = (p.pts || 0) + final[i]; p.pg = (p.pg || 0) + 1; });
+    }
     capObject(all.players, 40, n => all.players[n].moves + Object.values(all.players[n].rolls).reduce((a, b) => a + b, 0));
     touch();
   }
@@ -990,6 +997,14 @@
     const b2 = el('div'); box.append(b2);
     playerDist(b2, names.map(nm => ({ name: nm, color: all.players[nm].color || '#888', counts: all.players[nm].rolls })));
 
+    box.append(el('h3', '', 'Średnie punkty na grę'));
+    const bp = el('div'); box.append(bp);
+    hbars(bp, names.map(nm => {
+      const pl = all.players[nm];
+      const avg = pl.pg ? pl.pts / pl.pg : 0;
+      return { label: nm, color: pl.color || '#888', value: avg, text: pl.pg ? avg.toFixed(1).replace('.', ',') + ` (${pl.pg})` : '—' };
+    }));
+
     box.append(el('h3', '', 'Średni czas ruchu'));
     const b3 = el('div'); box.append(b3);
     hbars(b3, avgRows(names, names.map(nm => all.players[nm].color || '#888'),
@@ -997,11 +1012,12 @@
   }
 
   // ---- budowle (drogi, wsie, miasta, rycerze) i punkty; tylko lokalnie w trwającej grze ----
-  const KINDS = ['Drogi', 'Wsie', 'Miasta', 'Rycerze'];
-  const BASE_COUNTS = [2, 0 + 2, 0, 0];   // na starcie każdy ma 2 drogi i 2 wsie
+  const KINDS = ['Drogi', 'Wsie', 'Miasta', 'Rycerze', 'Punkty zwycięstwa'];
+  const BASE_COUNTS = [2, 2, 0, 0, 0];   // na starcie każdy ma 2 drogi i 2 wsie
   const diceCount = () => state.rolls.filter(r => r.n !== 'R').length;
   function ensureBuild() {
     if (!state.counts) state.counts = state.names.map(() => [...BASE_COUNTS]);
+    state.counts.forEach(row => { while (row.length < BASE_COUNTS.length) row.push(0); });   // gry zapisane przed dodaniem licznika punktów
     if (!state.log) state.log = [];
   }
   // zmiana licznika; zapisujemy ją z numerem rzutu kością, przy którym nastąpiła (oś X wykresu)
@@ -1030,7 +1046,7 @@
       const tops = c.map((r, i) => r[k] === mx ? i : -1).filter(i => i >= 0);
       return tops.length === 1 ? tops[0] : -1;
     };
-    const snap = () => c.map((r, i) => r[1] + 2 * r[2] + (road === i ? 2 : 0) + (army === i ? 2 : 0));
+    const snap = () => c.map((r, i) => r[1] + 2 * r[2] + r[4] + (road === i ? 2 : 0) + (army === i ? 2 : 0));
     const N = diceCount();
     const series = [];
     let ei = 0;
@@ -1043,19 +1059,22 @@
       }
       series.push(snap());
     }
-    return { series, final: series[N] };
+    return { series, final: series[N], road, army };
   }
 
   function renderBuild() {
     const box = $('buildBox');
     box.textContent = '';
-    const pts = pointSeries().final;
+    const { final: pts, road, army } = pointSeries();
     state.names.forEach((name, p) => {
       const blk = el('div', 'bp');
       const head = el('div', 'bph');
       const nm = el('span', 'bpn', name);
       nm.style.setProperty('--c', pColor(p));
-      head.append(nm, el('span', 'bpp', pts[p] + ' pkt'));
+      const tags = el('span', 'tags');
+      if (road === p) tags.append(el('b', '', 'Najdłuższa droga'));
+      if (army === p) tags.append(el('b', '', 'Największa armia'));
+      head.append(nm, tags, el('span', 'bpp', pts[p] + ' pkt'));
       const grid = el('div', 'bpg');
       KINDS.forEach((label, k) => {
         const cell = el('div', 'bc');
