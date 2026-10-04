@@ -269,6 +269,13 @@
   html[data-theme="modern"] .skel { background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%); background-size: 200% 100%; }
 
 
+  /* przesuwanie palcem po zawartości tabów */
+  #pad, #panelBuild, #panelHist, #panelFreq, #panelWho { touch-action: pan-y pinch-zoom; }
+  @keyframes slidel { from { transform: translateX(28px); opacity: .25; } to { transform: none; opacity: 1; } }
+  @keyframes slider { from { transform: translateX(-28px); opacity: .25; } to { transform: none; opacity: 1; } }
+  .slide-l { animation: slidel .22s ease-out; }
+  .slide-r { animation: slider .22s ease-out; }
+
   /* budowle i wykres punktów */
   .bp { padding: 8px 0 12px; border-bottom: 1px solid var(--rule); }
   .bp:last-child { border-bottom: 0; }
@@ -978,12 +985,44 @@
 
   let statTab = 'hist';
   let topTab = 'dice';
-  document.querySelectorAll('#topTabs button').forEach(b => {
-    b.onclick = () => { topTab = b.dataset.tab; render(); };
-  });
-  document.querySelectorAll('#statTabs button').forEach(b => {
-    b.onclick = () => { statTab = b.dataset.tab; render(); };
-  });
+  const TOP_ORDER = ['dice', 'build'], STAT_ORDER = ['hist', 'freq', 'who'];
+  const visibleOf = ids => ids.map($).find(e => !e.hidden);
+  // dir: 'left' (przesunięcie w lewo, treść wjeżdża z prawej), 'right' albo undefined (stuknięcie w tab, bez animacji)
+  function setTopTab(t, dir) { topTab = t; render(); if (dir) playSlide(visibleOf(['pad', 'panelBuild']), dir); }
+  function setStatTab(t, dir) { statTab = t; render(); if (dir) playSlide(visibleOf(['panelHist', 'panelFreq', 'panelWho']), dir); }
+  function playSlide(e, dir) {
+    if (!e) return;
+    e.classList.remove('slide-l', 'slide-r');
+    void e.offsetWidth;
+    e.classList.add(dir === 'left' ? 'slide-l' : 'slide-r');
+    e.addEventListener('animationend', () => e.classList.remove('slide-l', 'slide-r'), { once: true });
+  }
+  document.querySelectorAll('#topTabs button').forEach(b => { b.onclick = () => setTopTab(b.dataset.tab); });
+  document.querySelectorAll('#statTabs button').forEach(b => { b.onclick = () => setStatTab(b.dataset.tab); });
+
+  // przesunięcie palcem w poziomie po zawartości taba przełącza na sąsiedni tab (pionowe przewijanie działa jak zwykle)
+  function swipeTabs(ids, order, get, set) {
+    ids.forEach(id => {
+      const area = $(id);
+      let sx = 0, sy = 0, t0 = 0, active = false;
+      area.addEventListener('touchstart', e => {
+        active = e.touches.length === 1;
+        if (active) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now(); }
+      }, { passive: true });
+      area.addEventListener('touchend', e => {
+        if (!active) return;
+        active = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - t0 > 900) return;
+        const j = order.indexOf(get()) + (dx < 0 ? 1 : -1);
+        if (j >= 0 && j < order.length) set(order[j], dx < 0 ? 'left' : 'right');
+      }, { passive: true });
+      area.addEventListener('touchcancel', () => { active = false; }, { passive: true });
+    });
+  }
+  swipeTabs(['pad', 'panelBuild'], TOP_ORDER, () => topTab, setTopTab);
+  swipeTabs(['panelHist', 'panelFreq', 'panelWho'], STAT_ORDER, () => statTab, setStatTab);
 
   const plGames = n => n === 1 ? 'gra' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'gry' : 'gier';
 
