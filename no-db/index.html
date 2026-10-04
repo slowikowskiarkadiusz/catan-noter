@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Catan">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111111">
+<title>Catan rzuty</title>
+<script>
+  try { let t = localStorage.getItem('catan-noter-theme') || 'catan'; if (t === 'felt') t = 'poker'; document.documentElement.dataset.theme = t; }
+  catch (e) { document.documentElement.dataset.theme = 'catan'; }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=EB+Garamond:wght@500;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --wood: #3a2616; --wood2: #4b3220; --parch: #f0e0b4; --parch2: #e3cf9c; --ink: #3a2616;
+    --red: #b3261e; --gold: #d9a441; --green: #4f7a3a;
+    --head: 'Cinzel', Georgia, 'Palatino Linotype', serif;
+    --bodyf: 'EB Garamond', Georgia, 'Palatino Linotype', serif;
+    --pattern: repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 14px);
+    --text: #f0e0b4; --btnText: #f0e0b4; --onAccent: #fff; --h1s: #000;
+    --edge: #1e130a; --line: #8a6a3a; --rule: #cdb784; --muted: #7a6540; --muted2: #9a8458; --soft: #b9a47a;
+    --danger: #7a2b22; --sel: #fff3cf; --tok: #f7ebc6;
+    --p0: #c0392b; --p1: #2e6fb7; --p2: #e08a1e; --p3: #f2ede0;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; color: var(--text);
+    background-color: var(--wood); background-image: var(--pattern);
+    font: 17px var(--bodyf);
+    padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 16px);
+    touch-action: manipulation; min-height: 100vh;
+  }
+  [hidden] { display: none !important; }
+  h1, h2, #history th { font-family: var(--head); }
+  h1 { text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 6px; margin: 18px 0 4px; color: var(--gold); text-shadow: 0 2px 0 var(--h1s); }
+  h2 { font-size: 18px; margin: 20px 0 8px; color: var(--gold); letter-spacing: 1px; }
+  small { color: var(--soft); font-weight: 400; }
+  header { display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; }
+  header .info { flex: 1; color: var(--text); font-weight: bold; }
+
+  .btn { background: var(--wood2); color: var(--btnText); border: 2px solid var(--edge); border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 15px; box-shadow: 0 2px 0 var(--edge); }
+  .btn:active { transform: translateY(2px); box-shadow: none; }
+  .btn:disabled { opacity: .4; }
+  .btn.danger { background: var(--danger); }
+  .btn.primary { background: var(--green); color: var(--onAccent); width: 100%; padding: 14px; font-size: 18px; font-weight: bold; margin-top: 16px; }
+
+  .panel { background: var(--parch); color: var(--ink); border-radius: 12px; padding: 12px; border: 3px solid var(--line); box-shadow: 0 3px 0 var(--edge); margin-top: 12px; }
+  .panel h2 { color: var(--ink); margin: 0 0 6px; }
+
+  /* setup */
+  #setup input[type=text] { width: 100%; padding: 12px; font: inherit; font-size: 18px; background: var(--parch2); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; }
+  .nameRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .nameRow .dot { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--edge); flex: none; padding: 0; box-shadow: 0 0 0 2px var(--line); }
+  .colorList { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 10px; }
+  .colorList button { display: flex; align-items: center; gap: 8px; padding: 10px; font: inherit; font-size: 16px; text-align: left; background: var(--parch2); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; }
+  .colorList button i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--edge); flex: none; }
+  .colorList button.sel { border-color: var(--green); background: var(--sel); font-weight: bold; }
+  html[data-theme="modern"] .colorList button { background: #2a2a2a; color: #eee; border-color: #444; }
+  html[data-theme="modern"] .colorList button.sel { border-color: #2f6fd0; }
+  html[data-theme="modern"] .nameRow .dot { box-shadow: 0 0 0 2px #444; }
+  .nameRow input[type=text] { flex: 1; }
+  .nameRow input[type=radio] { width: 24px; height: 24px; accent-color: var(--green); }
+  .radios { display: flex; gap: 8px; }
+  .radios label { flex: 1; }
+  .radios input { position: absolute; opacity: 0; }
+  .radios span { display: block; text-align: center; padding: 12px; font-size: 20px; background: var(--parch2); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; }
+  .radios input:checked + span { background: var(--green); color: var(--onAccent); font-weight: bold; }
+
+  /* players */
+  /* cztery etykiety graczy (nie przyciski); aktualny jest pogrubiony i podkreślony kolorem gracza */
+  #players { display: flex; justify-content: space-between; gap: 6px; margin: 8px 0 14px; user-select: none; -webkit-user-select: none; }
+  #players .lbl { flex: 1; text-align: center; font-size: 16px; color: var(--soft); opacity: .6; padding: 4px 0 6px; border-bottom: 3px solid transparent; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #players .lbl::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
+  #players .lbl.cur { opacity: 1; color: var(--text); font-weight: bold; font-size: 18px; border-bottom-color: var(--c); }
+
+  /* number tokens */
+  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; justify-items: center; }
+  .pad button {
+    width: 100%; max-width: 78px; aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--line);
+    background: radial-gradient(circle at 35% 30%, var(--tok), var(--parch2)); color: var(--ink);
+    font: 800 25px var(--head); box-shadow: 0 3px 0 var(--edge); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  }
+  .pad button:active { transform: translateY(3px); box-shadow: none; }
+  .pad button.hot { color: var(--red); }
+  .pad button.seven { background: radial-gradient(circle at 35% 30%, #777, #3a3a3a); color: #eee; border-color: #222; }
+  .pad button.knight { background: radial-gradient(circle at 35% 30%, #6f9a55, #3d6a2a); color: #f5e9c0; border-color: #1f3a14; }
+  #pad.locked { opacity: .45; pointer-events: none; }
+  .pad { transition: opacity .15s; }
+  .pips { display: flex; gap: 2px; height: 5px; }
+  .pips i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  /* tables on parchment */
+  table { width: 100%; border-collapse: collapse; }
+  #stats td { padding: 4px 0; vertical-align: middle; }
+  td.n { width: 30px; font-weight: 800; font-family: var(--head); }
+  td.n.hot, #history td.v.hot { color: var(--red); }
+  td.c { width: 40px; text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
+  td.p { width: 52px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { height: 14px; min-width: 0; background: var(--green); border-radius: 7px; border: 1px solid var(--edge); transition: width .15s; }
+  .bar.hot { background: var(--red); }
+  #history th { text-align: left; color: var(--muted); font-weight: normal; padding: 4px 6px; border-bottom: 2px solid var(--line); }
+  #history td { padding: 6px; border-bottom: 1px solid var(--rule); }
+  #history td.v { font-weight: bold; }
+  #history td.i { color: var(--muted2); width: 40px; }
+  #history td.pl::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; border: 1px solid #000; background: var(--c); }
+
+  /* modal */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal .box { background: var(--parch); color: var(--ink); border: 4px solid var(--line); border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; text-align: center; }
+  .modal .icon { font-size: 34px; }
+  .modal h3 { margin: 6px 0 16px; font-size: 22px; }
+  .modal .actions { display: flex; gap: 8px; }
+  .modal .actions .btn { flex: 1; padding: 12px 4px; font-size: 16px; margin: 0; width: auto; }
+
+  /* burger + menu */
+  #topbar { padding: 8px 0 0; }
+  #burger { background: none; border: 0; color: var(--text); font-size: 28px; line-height: 1; padding: 4px 8px 4px 0; }
+  #scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
+  #drawer {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 78%; max-width: 300px; z-index: 21;
+    background: var(--wood2); color: var(--text); border-right: 3px solid var(--edge);
+    padding: calc(env(safe-area-inset-top) + 16px) 16px 16px; transform: translateX(-105%); transition: transform .2s;
+  }
+  #drawer.open { transform: none; }
+  #drawer h2 { margin: 0 0 14px; }
+  #themeBtn { width: 100%; text-align: left; display: flex; justify-content: space-between; }
+  #themeList { margin-top: 6px; border: 2px solid var(--edge); border-radius: 8px; overflow: hidden; }
+  #themeList button { display: block; width: 100%; text-align: left; padding: 12px 14px; font: inherit; font-size: 16px; background: var(--parch2); color: var(--ink); border: 0; border-bottom: 1px solid var(--rule); }
+  #themeList button:last-child { border-bottom: 0; }
+  #themeList button.sel { background: var(--green); color: var(--onAccent); font-weight: bold; }
+
+  /* motyw nowoczesny */
+  html[data-theme="modern"] { --head: -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] body { background: #111; color: #eee; font: 16px -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] h1, html[data-theme="modern"] .subtitle { display: none; }
+  html[data-theme="modern"] h2 { color: #eee; letter-spacing: 0; font-weight: 600; }
+  html[data-theme="modern"] small { color: #999; }
+  html[data-theme="modern"] #burger { color: #eee; }
+  html[data-theme="modern"] header .info { color: #999; font-weight: normal; }
+  html[data-theme="modern"] .btn { background: #333; color: #eee; border: 0; box-shadow: none; font-size: 16px; }
+  html[data-theme="modern"] .btn:active { transform: none; }
+  html[data-theme="modern"] .btn.danger { background: #5a2420; }
+  html[data-theme="modern"] .btn.primary { background: #2f6fd0; font-weight: 600; }
+  html[data-theme="modern"] .panel { background: none; color: #eee; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+  html[data-theme="modern"] .panel h2 { color: #eee; }
+  html[data-theme="modern"] #setup input[type=text] { background: #222; color: #eee; border: 1px solid #444; }
+  html[data-theme="modern"] .nameRow input[type=radio] { accent-color: #2f6fd0; }
+  html[data-theme="modern"] .radios span { background: #2a2a2a; color: #eee; border: 0; }
+  html[data-theme="modern"] .radios input:checked + span { background: #2f6fd0; color: #fff; font-weight: 600; }
+  html[data-theme="modern"] .pad { gap: 8px; justify-items: stretch; }
+  html[data-theme="modern"] .pad button { max-width: none; aspect-ratio: auto; height: 64px; border: 0; border-radius: 12px; background: #2a2a2a; color: #eee; box-shadow: none; font: 600 26px -apple-system, system-ui, sans-serif; }
+  html[data-theme="modern"] .pad button:active { background: #555; transform: none; }
+  html[data-theme="modern"] .pad button.hot { color: #ff6b5e; }
+  html[data-theme="modern"] .pad button.knight { background: #2a2a2a; color: #7bd88f; }
+  html[data-theme="modern"] .pips { display: none; }
+  html[data-theme="modern"] #stats { margin-top: 16px; }
+  html[data-theme="modern"] td.n { font-weight: 600; font-family: inherit; }
+  html[data-theme="modern"] td.n.hot, html[data-theme="modern"] #history td.v.hot { color: #ff6b5e; }
+  html[data-theme="modern"] td.p { color: #999; }
+  html[data-theme="modern"] .bar { background: #4a90e2; border: 0; border-radius: 3px; }
+  html[data-theme="modern"] .bar.hot { background: #ff6b5e; }
+  html[data-theme="modern"] #history th { color: #999; border-bottom: 1px solid #333; font-family: inherit; font-weight: 400; }
+  html[data-theme="modern"] #history td { border-bottom: 1px solid #222; }
+  html[data-theme="modern"] #history td.i { color: #777; }
+  html[data-theme="modern"] #ver { color: #666 !important; }
+  html[data-theme="modern"] .modal .box { background: #222; color: #eee; border: 0; }
+  html[data-theme="modern"] .modal .icon { display: none; }
+  html[data-theme="modern"] #drawer { background: #1c1c1c; color: #eee; border-right: 1px solid #333; }
+  html[data-theme="modern"] #themeList { border-color: #444; }
+  html[data-theme="modern"] #themeList button { background: #2a2a2a; color: #eee; border-bottom-color: #333; }
+  html[data-theme="modern"] #themeList button.sel { background: #2f6fd0; color: #fff; }
+
+  /* koniec gry / wygrane */
+  .btn.end { width: 100%; margin-top: 20px; padding: 14px; font-size: 18px; font-weight: bold; letter-spacing: 2px; background: var(--danger); }
+  .winners { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .winners button { padding: 14px 4px; font: inherit; font-size: 18px; border: 3px solid transparent; border-radius: 10px; background: var(--parch2); color: var(--ink); box-shadow: 0 2px 0 var(--line); }
+  .winners button.none { grid-column: 1 / -1; font-size: 16px; }
+  .winners button.sel { outline: 4px solid var(--gold); outline-offset: 1px; font-weight: bold; }
+  .winners button.none.sel { background: var(--sel); }
+  .wins td { padding: 5px 6px; border-bottom: 1px solid var(--rule); }
+  .wins tr:last-child td { border-bottom: 0; }
+  .wins td.w { text-align: right; font-weight: 800; font-family: var(--head); width: 50px; }
+  html[data-theme="modern"] .winners button { background: #2a2a2a; color: #eee; box-shadow: none; }
+  html[data-theme="modern"] .winners button.sel { background: #2f6fd0; border-color: #2f6fd0; color: #fff; }
+  html[data-theme="modern"] .btn.end { background: #5a2420; letter-spacing: 1px; }
+  html[data-theme="modern"] .wins td { border-bottom-color: #222; }
+  html[data-theme="modern"] .wins td.w { font-family: inherit; font-weight: 600; }
+
+
+  /* taby, wykresy słupkowe */
+  .modal .box.wide { max-width: 420px; max-height: 88vh; overflow-y: auto; text-align: left; }
+  .modal .box.wide h3 { text-align: center; }
+  .modal .box.wide #allStats h3 { text-align: left; font: 800 15px var(--head); letter-spacing: .5px; margin: 16px 0 6px; }
+  .modal .box.wide #allStats h3:first-child { margin-top: 4px; }
+  .tabs { display: flex; gap: 6px; margin-top: 16px; }
+  .tabs button { flex: 1; padding: 10px 4px; font: inherit; font-size: 16px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
+  .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
+  .tabs + .panel { margin-top: 10px; }
+  .panel h3 { margin: 14px 0 6px; font: 800 15px var(--head); letter-spacing: .5px; }
+  .panel h3:first-child { margin-top: 0; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .hb { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .hb .l { width: 66px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+  .hb .l.hot { color: var(--red); }
+  .hb .track { flex: 1; }
+  .hb .fill { height: 14px; border-radius: 7px; background: var(--green); border: 1px solid var(--edge); transition: width .15s; }
+  .hb .fill.hot { background: var(--red); }
+  .hb .t { width: 74px; flex: none; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pd { display: flex; align-items: flex-end; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .pd:last-child { border-bottom: 0; }
+  .pd .nm { width: 76px; flex: none; font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; align-self: center; }
+  .pd .nm::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; border: 1px solid #000; background: var(--c); }
+  .pd .cols { flex: 1; display: flex; align-items: flex-end; gap: 2px; }
+  .pd .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+  .pd .v { font-size: 10px; color: var(--muted); height: 12px; line-height: 12px; }
+  .pd .bar2 { width: 100%; background: var(--c); border: 1px solid var(--edge); border-bottom: 0; border-radius: 2px 2px 0 0; }
+  .pd .n { font-size: 10px; margin-top: 2px; font-weight: bold; }
+  .pd .col.peak .n { color: var(--red); }
+  .pd .col.peak .v { color: var(--ink); font-weight: bold; }
+  html[data-theme="modern"] .tabs button { background: #2a2a2a; color: #aaa; border: 0; }
+  html[data-theme="modern"] .tabs button.on { background: #2f6fd0; color: #fff; box-shadow: none; }
+  html[data-theme="modern"] .note, html[data-theme="modern"] .hb .t, html[data-theme="modern"] .pd .v { color: #999; }
+  html[data-theme="modern"] .hb .l.hot { color: #ff6b5e; }
+  html[data-theme="modern"] .hb .fill { background: #4a90e2; border: 0; border-radius: 3px; }
+  html[data-theme="modern"] .hb .fill.hot { background: #ff6b5e; }
+  html[data-theme="modern"] .pd { border-bottom-color: #222; }
+  html[data-theme="modern"] .pd .col.peak .n { color: #ff6b5e; }
+  html[data-theme="modern"] .pd .col.peak .v { color: #eee; }
+  html[data-theme="modern"] .pd .bar2 { border: 0; border-radius: 2px 2px 0 0; }
+
+  /* dodatkowe motywy: same zmienne */
+  html[data-theme="ocean"] {
+    --wood: #0d2b3e; --wood2: #14425c; --parch: #e2f3f6; --parch2: #c3e3ea; --ink: #0d2b3e;
+    --gold: #ffd479; --green: #1f8f8a; --red: #d94f3d; --danger: #a8402f;
+    --text: #e2f3f6; --btnText: #e2f3f6; --edge: #061721; --line: #3b8ea5; --rule: #a5cdd6;
+    --muted: #4c7482; --muted2: #7ba3b0; --soft: #8fb8c4; --sel: #fff6d6; --tok: #f2fbfc;
+    --pattern: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 2px, transparent 2px 16px);
+  }
+  html[data-theme="forest"] {
+    --wood: #1b2a18; --wood2: #2d4328; --parch: #e8eed4; --parch2: #d3deb4; --ink: #1b2a18;
+    --gold: #dcb64e; --green: #4e8a30; --red: #b3472b; --danger: #8a3a24;
+    --text: #e8eed4; --btnText: #e8eed4; --edge: #0c150a; --line: #6d8a4f; --rule: #bccb98;
+    --muted: #5b6e45; --muted2: #8a9c6c; --soft: #a3b887; --sel: #fbf6d2; --tok: #f6f9e6;
+    --pattern: radial-gradient(rgba(255,255,255,.05) 1.5px, transparent 1.5px) 0 0 / 22px 22px;
+  }
+  html[data-theme="desert"] {
+    color-scheme: light;
+    --wood: #ead7a8; --wood2: #d6b26e; --parch: #fff8e1; --parch2: #f6e6b8; --ink: #4a3414;
+    --gold: #94550f; --green: #5f7a24; --red: #b0281a; --danger: #a8402a;
+    --text: #4a3414; --btnText: #3b280f; --edge: #5c4018; --line: #b08840; --rule: #e2cf98;
+    --muted: #7a6030; --muted2: #a08850; --soft: #6e5628; --sel: #fff0c0; --tok: #fffbee; --h1s: transparent;
+    --pattern: radial-gradient(rgba(120,80,20,.07) 1.5px, transparent 1.5px) 0 0 / 18px 18px;
+  }
+  html[data-theme="desert"] .pad button.seven { background: radial-gradient(circle at 35% 30%, #8a8a8a, #4a4a4a); }
+  html[data-theme="neon"] {
+    --head: 'Orbitron', system-ui, sans-serif; --bodyf: -apple-system, system-ui, sans-serif;
+    --wood: #0a0a1a; --wood2: #1b1b3a; --parch: #1a1a38; --parch2: #26264f; --ink: #f2f2ff;
+    --gold: #ff4fb0; --green: #14c9bb; --red: #ff5c7a; --danger: #8f1f4f; --onAccent: #04121a;
+    --text: #f2f2ff; --btnText: #f2f2ff; --edge: #04040d; --line: #ff4fb0; --rule: #34346a;
+    --muted: #9a9acb; --muted2: #7878b0; --soft: #9a9acb; --sel: #3a3a78; --tok: #36366e; --h1s: #6a1a4f;
+    --pattern: linear-gradient(rgba(255,79,176,.06) 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, rgba(255,79,176,.06) 1px, transparent 1px) 0 0 / 28px 28px;
+  }
+  html[data-theme="neon"] h1, html[data-theme="neon"] h2 { letter-spacing: 2px; }
+  html[data-theme="neon"] .pad button { font-weight: 700; font-size: 22px; }
+
+  /* poker: ciemne kasyno, karty, żetony */
+  html[data-theme="poker"] {
+    --wood: #06301e; --wood2: #2a0f12; --parch: #f8f4e6; --parch2: #ece5cd; --ink: #1b1b1b;
+    --gold: #e3bc4b; --green: #0b6b3a; --red: #c1121f; --danger: #8c1c1c;
+    --text: #e8f3ea; --btnText: #f3e5c0; --edge: #020c07; --line: #b8962e; --rule: #d9d2bc;
+    --muted: #6b6652; --muted2: #8aa595; --soft: #b9d3c0; --sel: #fff1bf; --tok: #f8f4e6; --h1s: #021408;
+    --pattern: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0 / 5px 5px;
+  }
+  html[data-theme="poker"] .pad button {
+    background: radial-gradient(circle, #f8f4e6 0 56%, #1f4fa3 57%); border: 3px dashed #f8f4e6; box-shadow: 0 3px 0 #020c07; color: #1b1b1b;
+  }
+  html[data-theme="poker"] .pad button.hot { background: radial-gradient(circle, #f8f4e6 0 56%, #b3171f 57%); color: #b3171f; }
+  html[data-theme="poker"] .pad button.seven { background: radial-gradient(circle, #232323 0 56%, #0b0b0b 57%); border: 3px dashed #c9a227; color: #f8f4e6; }
+  html[data-theme="poker"] .pad button.knight { background: radial-gradient(circle, #f8f4e6 0 56%, #c9a227 57%); border: 3px dashed #f8f4e6; color: #1b1b1b; }
+  html[data-theme="poker"] .pad button:active { transform: translateY(3px); box-shadow: none; }
+  html[data-theme="poker"] .panel, html[data-theme="poker"] .modal .box { box-shadow: 0 3px 0 #020c07, inset 0 0 0 2px #f8f4e6, inset 0 0 0 3px var(--line); }
+  html[data-theme="poker"] h2:not(.panel h2)::before { content: '♠ '; }
+  html[data-theme="poker"] #history td.v.hot, html[data-theme="poker"] td.n.hot { color: #c1121f; }
+
+  /* bilard: jasne sukno, drewniane bandy, kolorowe bile */
+  html[data-theme="billiard"] {
+    --wood: #0e7a46; --wood2: #24130a; --parch: #3a2114; --parch2: #4e2e1d; --ink: #f3e5c0;
+    --gold: #f6dd8a; --green: #0e7a46; --red: #ef4a4c; --danger: #8c1c1c;
+    --text: #f2fbf4; --btnText: #f3e5c0; --edge: #120a05; --line: #c9a24a; --rule: #6a4630;
+    --muted: #cdb88a; --muted2: #bfe3cc; --soft: #d8c79a; --sel: #6a4630; --tok: #fff; --h1s: #063d22;
+    --pattern: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 4px 4px;
+  }
+  html[data-theme="billiard"] .pad button {
+    border: 0; color: #111; box-shadow: 0 3px 0 #120a05, inset -5px -6px 10px rgba(0,0,0,.35), inset 3px 3px 6px rgba(255,255,255,.25);
+    background: radial-gradient(circle, #fbf8ee 0 47%, transparent 48%), var(--ball);
+  }
+  html[data-theme="billiard"] .pad button.hot { color: #c1121f; }
+  html[data-theme="billiard"] .pad button:active { transform: translateY(3px); box-shadow: none; }
+  html[data-theme="billiard"] .pips { display: none; }
+  html[data-theme="billiard"] .pad button:nth-child(1)  { --ball: linear-gradient(#1d4fa8, #1d4fa8); }
+  html[data-theme="billiard"] .pad button:nth-child(2)  { --ball: linear-gradient(#c4161c, #c4161c); }
+  html[data-theme="billiard"] .pad button:nth-child(3)  { --ball: linear-gradient(#5b2a86, #5b2a86); }
+  html[data-theme="billiard"] .pad button:nth-child(4)  { --ball: linear-gradient(#f08a1c, #f08a1c); }
+  html[data-theme="billiard"] .pad button:nth-child(5)  { --ball: linear-gradient(#1b7a3d, #1b7a3d); }
+  html[data-theme="billiard"] .pad button:nth-child(6)  { --ball: linear-gradient(#7a1f1f, #7a1f1f); }
+  html[data-theme="billiard"] .pad button:nth-child(7)  { --ball: linear-gradient(#141414, #141414); }
+  html[data-theme="billiard"] .pad button:nth-child(8)  { --ball: linear-gradient(#f8f6ef 0 22%, #f2c500 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(9)  { --ball: linear-gradient(#f8f6ef 0 22%, #1d4fa8 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(10) { --ball: linear-gradient(#f8f6ef 0 22%, #c4161c 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(11) { --ball: linear-gradient(#f8f6ef 0 22%, #5b2a86 22% 78%, #f8f6ef 78%); }
+  html[data-theme="billiard"] .pad button:nth-child(12) { --ball: linear-gradient(#f3efe2, #f3efe2); color: #c1121f; }
+</style>
+</head>
+<body>
+
+<div id="topbar"><button id="burger" aria-label="Menu">☰</button></div>
+<div id="scrim" hidden></div>
+<nav id="drawer">
+  <h2>Menu</h2>
+  <button class="btn" id="statsBtn" style="width:100%;text-align:left;margin-bottom:10px">Statystyki</button>
+  <button class="btn" id="themeBtn"><span>Motyw</span><span id="themeCur"></span></button>
+  <div id="themeList" hidden></div>
+  <button class="btn" id="refreshBtn" style="width:100%;text-align:left;margin-top:10px">Wczytaj najnowszą wersję</button>
+</nav>
+
+<section id="setup">
+  <h1>CATAN</h1>
+  <div class="subtitle" style="text-align:center;color:var(--soft)">rzuty kością</div>
+  <h2>Gracze <small>(kółko = pierwszy rzuca)</small></h2>
+  <div id="nameInputs"></div>
+  <h2>Gra</h2>
+  <div class="radios">
+    <label><input type="radio" name="game" value="1" checked><span>1</span></label>
+    <label><input type="radio" name="game" value="2"><span>2</span></label>
+    <label><input type="radio" name="game" value="3"><span>3</span></label>
+  </div>
+  <button class="btn primary" id="start">Start</button>
+  <h2 style="margin-top:24px">Wygrane</h2>
+  <div class="panel" style="margin-top:0"><table class="wins"></table></div>
+</section>
+
+<section id="game" hidden>
+  <header>
+    <span class="info" id="info"></span>
+    <button class="btn" id="undo">Cofnij</button>
+    <button class="btn danger" id="clear">Wyczyść</button>
+  </header>
+  <div id="players"></div>
+  <div class="pad" id="pad"></div>
+  <div class="tabs" id="statTabs">
+    <button data-tab="freq" class="on">Rzuty</button>
+    <button data-tab="who">Kto co rzucił</button>
+  </div>
+  <div class="panel" id="panelFreq"><table id="stats"></table></div>
+  <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
+  <h2 style="margin-top:20px">Ostatnie rzuty</h2>
+  <div class="panel" style="margin-top:0"><table id="history">
+    <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <button class="btn end" id="end">KONIEC</button>
+  <h2 style="margin-top:24px">Wygrane</h2>
+  <div class="panel" style="margin-top:0"><table class="wins"></table></div>
+  <h2 style="margin-top:24px">Średni czas ruchu</h2>
+  <div class="panel" style="margin-top:0">
+    <div id="avgTime"></div>
+    <div class="note">Czas liczy się od rzutu gracza do rzutu następnego. Ostatni ruch w grze się nie liczy.</div>
+  </div>
+</section>
+
+<div id="statsModal" class="modal" hidden>
+  <div class="box wide">
+    <h3>Statystyki wszystkich gier</h3>
+    <div id="allStats"></div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn primary" id="statsClose" style="margin:0">Zamknij</button>
+    </div>
+  </div>
+</div>
+
+<div id="knightModal" class="modal" hidden>
+  <div class="box">
+    <div class="icon">♞</div>
+    <h3>Kto używa rycerza?</h3>
+    <div class="winners" id="knightWho"></div>
+    <div class="actions">
+      <button class="btn" id="knightCancel">Anuluj</button>
+    </div>
+  </div>
+</div>
+
+<div id="winModal" class="modal" hidden>
+  <div class="box">
+    <div class="icon">🏆</div>
+    <h3>Kto wygrał?</h3>
+    <div class="winners" id="winners"></div>
+    <div class="actions">
+      <button class="btn" id="winCancel">Anuluj</button>
+      <button class="btn primary" id="winOk" style="margin:0" disabled>Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<div id="ver" style="text-align:center;color:var(--muted2);font-size:12px;margin-top:16px"></div>
+
+<div id="modal" class="modal" hidden>
+  <div class="box">
+    <div class="icon">♟︎</div>
+    <h3 id="modalTitle"></h3>
+    <div class="actions">
+      <button class="btn" id="modalCancel">Anuluj</button>
+      <button class="btn" id="modalSkip">Pomiń</button>
+      <button class="btn primary" id="modalOk" style="margin:0">Potwierdź</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BUILD = 'dev';  // podmieniane przez workflow na hash commita
+  const KEY = 'catan-noter-state';
+  const WINS_KEY = 'catan-noter-wins';
+  const SETUP_KEY = 'catan-noter-setup';
+  const STATS_KEY = 'catan-noter-stats';
+  const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
+  const nums = [2,3,4,5,6,7,8,9,10,11,12];
+  const isHot = n => n === 6 || n === 8;
+  const $ = id => document.getElementById(id);
+  const COLORS = [
+    { name: 'Czerwony', hex: '#c0392b' }, { name: 'Niebieski', hex: '#2e6fb7' },
+    { name: 'Pomarańczowy', hex: '#e08a1e' }, { name: 'Biały', hex: '#f2ede0' },
+    { name: 'Zielony', hex: '#4f9a3a' }, { name: 'Brązowy', hex: '#8b5a2b' },
+  ];
+  // czytelny kolor tekstu na tle w kolorze gracza
+  function inkOn(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150 ? '#111' : '#fff';
+  }
+  function tint(b, i) { b.style.background = pColor(i); b.style.color = inkOn(pColor(i)); }
+  const DEFAULT_COLORS = COLORS.slice(0, 4).map(c => c.hex);
+  const pColor = i => (state && state.colors && state.colors[i]) || DEFAULT_COLORS[i];
+
+  // state: null (ustawienia) albo { names, game, current, rolls: [{p, n}] }
+  let state = load();
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.names) && s.names.length === 4 && Array.isArray(s.rolls)) return s;
+    } catch (e) {}
+    return null;
+  }
+  function save() {
+    try {
+      if (state) localStorage.setItem(KEY, JSON.stringify(state));
+      else localStorage.removeItem(KEY);
+    } catch (e) {}
+  }
+
+  // wygrane: { imię: liczba } — osobny klucz, nie jest czyszczone przez „Wyczyść”
+  let wins = loadWins();
+  function loadWins() {
+    try {
+      const w = JSON.parse(localStorage.getItem(WINS_KEY));
+      if (w && typeof w === 'object' && !Array.isArray(w)) return w;
+    } catch (e) {}
+    return {};
+  }
+  function saveWins() {
+    try { localStorage.setItem(WINS_KEY, JSON.stringify(wins)); } catch (e) {}
+  }
+  function renderWins() {
+    const names = new Set(Object.keys(wins));
+    if (state) state.names.forEach(n => names.add(n));
+    const rows = [...names].sort((a, b) => (wins[b] || 0) - (wins[a] || 0));
+    document.querySelectorAll('.wins').forEach(t => {
+      t.textContent = '';
+      if (!rows.length) { t.insertRow().insertCell().textContent = 'Brak zapisanych gier'; return; }
+      rows.forEach(n => {
+        const tr = t.insertRow();
+        tr.insertCell().textContent = n;
+        const c = tr.insertCell();
+        c.className = 'w';
+        c.textContent = wins[n] || 0;
+      });
+    });
+  }
+
+  // ---- setup ----
+  let chosen = [...DEFAULT_COLORS];
+  const dots = [], lists = [];
+  const nameInputs = DEFAULT_NAMES.map((n, k) => {
+    const wrap = document.createElement('div');
+    const row = document.createElement('div');
+    row.className = 'nameRow';
+    const dot = document.createElement('button');
+    dot.className = 'dot';
+    dot.setAttribute('aria-label', 'Kolor gracza');
+    const i = document.createElement('input');
+    i.type = 'text'; i.value = n; i.maxLength = 20;
+    const lab = document.createElement('label');
+    const r = document.createElement('input');
+    r.type = 'radio'; r.name = 'first'; r.value = k; r.checked = k === 0;
+    lab.append(r);
+    row.append(dot, i, lab);
+    const list = document.createElement('div');
+    list.className = 'colorList';
+    list.hidden = true;
+    dot.onclick = () => {
+      const open = list.hidden;
+      lists.forEach(l => { l.hidden = true; });
+      if (open) { fillColorList(k); list.hidden = false; }
+    };
+    wrap.append(row, list);
+    $('nameInputs').appendChild(wrap);
+    dots.push(dot); lists.push(list);
+    return i;
+  });
+
+  // dropdown koloru (ten sam kolor może mieć kilku graczy)
+  function fillColorList(k) {
+    const list = lists[k];
+    list.textContent = '';
+    COLORS.forEach(c => {
+      const b = document.createElement('button');
+      const sw = document.createElement('i');
+      sw.style.background = c.hex;
+      b.append(sw, c.name);
+      if (chosen[k] === c.hex) b.className = 'sel';
+      b.onclick = () => { chosen[k] = c.hex; paintDots(); saveSetup(); list.hidden = true; };
+      list.appendChild(b);
+    });
+  }
+  function paintDots() { dots.forEach((d, k) => { d.style.background = chosen[k]; }); }
+  paintDots();
+
+  // ustawienia startowe (imiona, kolory, pierwszy gracz, numer gry) pamiętane osobno, żeby nie znikały po odświeżeniu
+  function saveSetup() {
+    try {
+      localStorage.setItem(SETUP_KEY, JSON.stringify({
+        names: nameInputs.map(i => i.value),
+        colors: chosen,
+        first: +document.querySelector('input[name=first]:checked').value,
+        game: +document.querySelector('input[name=game]:checked').value,
+      }));
+    } catch (e) {}
+  }
+  function loadSetup() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SETUP_KEY));
+      if (!d) return;
+      if (Array.isArray(d.names)) d.names.slice(0, 4).forEach((n, k) => { if (typeof n === 'string') nameInputs[k].value = n; });
+      if (Array.isArray(d.colors) && d.colors.length === 4) chosen = d.colors.map((c, k) => typeof c === 'string' ? c : DEFAULT_COLORS[k]);
+      const f = document.querySelector(`input[name=first][value="${d.first}"]`);
+      if (f) f.checked = true;
+      const g = document.querySelector(`input[name=game][value="${d.game}"]`);
+      if (g) g.checked = true;
+      paintDots();
+    } catch (e) {}
+  }
+  $('setup').addEventListener('input', saveSetup);
+  $('setup').addEventListener('change', saveSetup);
+  loadSetup();
+
+  $('start').onclick = () => {
+    const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
+    const game = +document.querySelector('input[name=game]:checked').value;
+    const first = +document.querySelector('input[name=first]:checked').value;
+    state = { names, game, first, colors: [...chosen], current: first, rolls: [] };
+    save(); render();
+  };
+
+  // ---- game ----
+  [...nums, 'R'].forEach(n => {
+    const b = document.createElement('button');
+    const num = document.createElement('span');
+    num.textContent = n;
+    b.append(num);
+    if (typeof n === 'number' && n !== 7) {
+      const pips = document.createElement('span');
+      pips.className = 'pips';
+      for (let k = 0; k < 6 - Math.abs(7 - n); k++) pips.append(document.createElement('i'));
+      b.append(pips);
+    }
+    b.className = isHot(n) ? 'hot' : n === 7 ? 'seven' : n === 'R' ? 'knight' : '';
+    b.onclick = () => padLocked ? null : n === 7 ? askRobber(7, state.current) : n === 'R' ? askKnight() : addRoll(n, -1);
+    $('pad').appendChild(b);
+  });
+
+  nums.forEach(n => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="n"></td><td class="c"></td><td><div class="bar"></div></td><td class="p"></td>`;
+    tr.cells[0].textContent = n;
+    if (isHot(n)) tr.cells[0].classList.add('hot');
+    $('stats').appendChild(tr);
+  });
+
+  // po zapisaniu rzutu kością blokada przycisków na 2 s (ochrona przed podwójnym stuknięciem)
+  let padLocked = false, lockTimer = null;
+  function lockPad(ms) {
+    padLocked = true;
+    $('pad').classList.add('locked');
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(() => { padLocked = false; $('pad').classList.remove('locked'); }, ms);
+  }
+
+  function addRoll(n, t, p = state.current) {
+    if (n !== 'R') lockPad(2000);
+    state.rolls.push({ p, n, t, ts: Date.now() });
+    if (n !== 'R') state.current = (state.current + 1) % 4;  // rycerz nie kończy kolejki rzutów
+    save(); render();
+  }
+
+  // rycerz: najpierw pytanie, kto go używa (obecny gracz czy poprzedni); rycerz nie przesuwa tury
+  function askKnight() {
+    const box = $('knightWho');
+    box.textContent = '';
+    const cur = state.current, prev = (cur + 3) % 4;
+    [[prev, 'Poprzedni'], [cur, 'Obecny']].forEach(([i, label]) => {
+      const b = document.createElement('button');
+      b.append(label + ':');
+      b.append(document.createElement('br'));
+      b.append(state.names[i]);
+      tint(b, i);
+      b.onclick = () => { $('knightModal').hidden = true; askRobber('R', i); };
+      box.appendChild(b);
+    });
+    $('knightModal').hidden = false;
+  }
+  $('knightCancel').onclick = () => { $('knightModal').hidden = true; };
+
+  // ---- 7 i rycerz (R): wspólna kolejka. Każdy gracz ma własną kolejność. Pierwszy raz: od siebie o numer gry (gra 1 = następny, 2 = co drugi, 3 = co trzeci); potem następna osoba po jego poprzednim celu.
+  // "Pomiń" przechodzi do kolejnej osoby; po pominięciu ostatniej zapisuje się brak celu.
+  let candidates = [], ci = 0;
+  let kind = 7;
+  let robWho = 0;
+  function askRobber(k, who) {
+    kind = k;
+    robWho = who;
+    // licznik per gracz: gdzie ten gracz poprzednio wysłał złodzieja (z historii, więc cofnięcie działa);
+    // pierwszy raz startuje od rzucającego przesuniętego o numer gry, potem zawsze następna osoba
+    const last = state.rolls.findLast(r => (r.n === 7 || r.n === 'R') && r.p === who && r.t >= 0);
+    const base = last ? last.t : who;
+    const step = last ? 1 : state.game;
+    candidates = [];
+    for (let k = 0; k < 4; k++) {
+      const i = (base + step + k) % 4;
+      if (i !== who) candidates.push(i);
+    }
+    ci = 0;
+    showCandidate();
+    $('modal').hidden = false;
+  }
+  function showCandidate() {
+    $('modalTitle').textContent = `${state.names[robWho]}${kind === 'R' ? ' (rycerz)' : ''} idzie do ${state.names[candidates[ci]]}`;
+    $('modalSkip').textContent = ci === candidates.length - 1 ? 'Nikogo' : 'Pomiń';
+  }
+  $('modalSkip').onclick = () => {
+    if (ci < candidates.length - 1) { ci++; showCandidate(); }
+    else { $('modal').hidden = true; addRoll(kind, -1, robWho); }
+  };
+  $('modalCancel').onclick = () => { $('modal').hidden = true; };
+  $('modalOk').onclick = () => {
+    $('modal').hidden = true;
+    addRoll(kind, candidates[ci], robWho);
+  };
+
+  $('undo').onclick = () => {
+    const last = state.rolls.pop();
+    if (last && last.n !== 'R') state.current = last.p;  // rycerz nie zmieniał tury
+    save(); render();
+  };
+
+  // „Wyczyść” zaczyna bieżącą grę od nowa (te same gracze i numer gry); wygrane zostają
+  $('clear').onclick = () => {
+    if (!confirm('Zacząć tę grę od nowa? Zapisane wygrane zostaną.')) return;
+    state.rolls = [];
+    state.current = state.first || 0;
+    save(); render();
+  };
+
+  // ---- KONIEC: wybór zwycięzcy ----
+  let winner = null;  // indeks gracza albo 'none' (nikt nie wygrał)
+  $('end').onclick = () => {
+    winner = null;
+    $('winOk').disabled = true;
+    const box = $('winners');
+    box.textContent = '';
+    state.names.forEach((name, i) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      tint(b, i);
+      b.onclick = () => {
+        winner = i;
+        [...box.children].forEach(c => c.classList.toggle('sel', c === b));
+        $('winOk').disabled = false;
+      };
+      box.appendChild(b);
+    });
+    const none = document.createElement('button');
+    none.textContent = 'Nikt nie wygrał';
+    none.className = 'none';
+    none.onclick = () => {
+      winner = 'none';
+      [...box.children].forEach(c => c.classList.toggle('sel', c === none));
+      $('winOk').disabled = false;
+    };
+    box.appendChild(none);
+    $('winModal').hidden = false;
+  };
+  $('winCancel').onclick = () => { $('winModal').hidden = true; };
+  $('winOk').onclick = () => {
+    $('winModal').hidden = true;
+    mergeGameStats(state);
+    if (winner !== 'none') {
+      const name = state.names[winner];
+      wins[name] = (wins[name] || 0) + 1;
+      saveWins();
+    }
+    // koniec gry: wróć do ustawień z tymi samymi imionami
+    state.names.forEach((n, i) => { nameInputs[i].value = n; });
+    chosen = state.colors ? [...state.colors] : [...DEFAULT_COLORS];
+    paintDots();
+    saveSetup();
+    state = null;
+    save(); render();
+  };
+
+  // ---- czas ruchu i statystyki ----
+  // ruch gracza trwa od jego rzutu kością do rzutu następnego gracza (rycerz nie liczy się jako rzut);
+  // ostatni ruch w grze nie ma końca, więc nie jest liczony
+  function moveTimes(rolls) {
+    const d = rolls.filter(r => r.n !== 'R');
+    const out = [];
+    for (let i = 0; i < d.length - 1; i++) {
+      const a = d[i], b = d[i + 1];
+      if (typeof a.ts === 'number' && typeof b.ts === 'number' && b.ts >= a.ts) out.push({ p: a.p, ms: b.ts - a.ts });
+    }
+    return out;
+  }
+  function fmtTime(ms) {
+    const s = Math.round(ms / 1000);
+    return s < 60 ? s + ' s' : Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  // poziome słupki: rows = [{ label, value, text, color?, hot? }]
+  function hbars(box, rows) {
+    box.textContent = '';
+    const max = Math.max(...rows.map(r => r.value), 0);
+    rows.forEach(r => {
+      const row = el('div', 'hb');
+      const l = el('div', 'l' + (r.hot ? ' hot' : ''), r.label);
+      const track = el('div', 'track');
+      const fill = el('div', 'fill' + (r.hot ? ' hot' : ''));
+      fill.style.width = (max ? r.value / max * 100 : 0) + '%';
+      if (r.color) fill.style.background = r.color;
+      if (!r.value) fill.style.borderWidth = '0';
+      track.append(fill);
+      row.append(l, track, el('div', 't', r.text));
+      box.append(row);
+    });
+  }
+  // słupki pionowe 2–12 osobno dla każdego gracza: players = [{ name, color, counts }]
+  function playerDist(box, players) {
+    box.textContent = '';
+    players.forEach(pl => {
+      const max = Math.max(...nums.map(n => pl.counts[n] || 0), 0);
+      const row = el('div', 'pd');
+      const nm = el('div', 'nm', pl.name);
+      nm.style.setProperty('--c', pl.color);
+      const cols = el('div', 'cols');
+      nums.forEach(n => {
+        const c = pl.counts[n] || 0;
+        const col = el('div', 'col' + (max && c === max ? ' peak' : ''));
+        col.style.setProperty('--c', pl.color);
+        const bar = el('div', 'bar2');
+        bar.style.height = (max ? Math.round(c / max * 48) : 0) + 'px';
+        if (!c) bar.style.borderWidth = '0';
+        col.append(el('div', 'v', c || ''), bar, el('div', 'n', n));
+        cols.append(col);
+      });
+      row.append(nm, cols);
+      box.append(row);
+    });
+  }
+  function avgRows(names, colors, sums, counts) {
+    return names.map((name, i) => ({
+      label: name, color: colors[i],
+      value: counts[i] ? sums[i] / counts[i] : 0,
+      text: counts[i] ? fmtTime(sums[i] / counts[i]) : '—',
+    }));
+  }
+
+  // wyniki zakończonej gry dopisywane do statystyk wszystkich gier (zapisujemy tylko sumy: rzuty na gracza i czasy do średniej)
+  function loadStats() {
+    try {
+      const d = JSON.parse(localStorage.getItem(STATS_KEY));
+      if (d && d.players && typeof d.players === 'object') return d;
+    } catch (e) {}
+    return { games: 0, players: {} };
+  }
+  function mergeGameStats(st) {
+    const all = loadStats();
+    all.games = (all.games || 0) + 1;
+    const P = i => all.players[st.names[i]] || (all.players[st.names[i]] = { rolls: {}, ms: 0, moves: 0 });
+    st.names.forEach((n, i) => { P(i).color = pColor(i); });
+    st.rolls.filter(r => r.n !== 'R').forEach(r => { const p = P(r.p); p.rolls[r.n] = (p.rolls[r.n] || 0) + 1; });
+    moveTimes(st.rolls).forEach(m => { const p = P(m.p); p.ms += m.ms; p.moves += 1; });
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
+  let statTab = 'freq';
+  document.querySelectorAll('#statTabs button').forEach(b => {
+    b.onclick = () => { statTab = b.dataset.tab; render(); };
+  });
+
+  const plGames = n => n === 1 ? 'gra' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'gry' : 'gier';
+
+  function renderAllStats() {
+    const box = $('allStats');
+    box.textContent = '';
+    const all = loadStats();
+    const names = Object.keys(all.players);
+    if (!all.games) { box.append(el('div', '', 'Brak danych. Statystyki pojawią się po zakończeniu pierwszej gry.')); return; }
+
+    const totals = Object.fromEntries(nums.map(n => [n, 0]));
+    names.forEach(nm => nums.forEach(n => { totals[n] += all.players[nm].rolls[n] || 0; }));
+    const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+
+    box.append(el('h3', '', `Co najczęściej leci (${all.games} ${plGames(all.games)}, ${sum} rzutów)`));
+    const b1 = el('div'); box.append(b1);
+    hbars(b1, nums.map(n => ({ label: String(n), value: totals[n], hot: isHot(n),
+      text: totals[n] + ' (' + (sum ? Math.round(totals[n] / sum * 100) : 0) + '%)' })));
+
+    box.append(el('h3', '', 'Co komu najczęściej leci'));
+    const b2 = el('div'); box.append(b2);
+    playerDist(b2, names.map(nm => ({ name: nm, color: all.players[nm].color || '#888', counts: all.players[nm].rolls })));
+
+    box.append(el('h3', '', 'Średni czas ruchu'));
+    const b3 = el('div'); box.append(b3);
+    hbars(b3, avgRows(names, names.map(nm => all.players[nm].color || '#888'),
+      names.map(nm => all.players[nm].ms), names.map(nm => all.players[nm].moves)));
+  }
+
+  function renderGameStats(dice) {
+    document.querySelectorAll('#statTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === statTab));
+    $('panelFreq').hidden = statTab !== 'freq';
+    $('panelWho').hidden = statTab !== 'who';
+    if (statTab === 'who') {
+      const per = state.names.map(() => ({}));
+      dice.forEach(r => { per[r.p][r.n] = (per[r.p][r.n] || 0) + 1; });
+      playerDist($('whoChart'), state.names.map((name, i) => ({ name, color: pColor(i), counts: per[i] })));
+    }
+    const sums = [0, 0, 0, 0], cnt = [0, 0, 0, 0];
+    moveTimes(state.rolls).forEach(m => { sums[m.p] += m.ms; cnt[m.p]++; });
+    hbars($('avgTime'), avgRows(state.names, state.names.map((_, i) => pColor(i)), sums, cnt));
+  }
+
+  function render() {
+    $('setup').hidden = !!state;
+    $('game').hidden = !state;
+    renderWins();
+    if (!state) return;
+
+    const dice = state.rolls.filter(r => r.n !== 'R');
+    $('info').textContent = `Gra ${state.game} · rzutów: ${dice.length}`;
+    $('undo').disabled = !state.rolls.length;
+
+    // cztery etykiety graczy; aktualnie rzucający jest zaznaczony
+    const pl = $('players');
+    pl.textContent = '';
+    state.names.forEach((name, i) => {
+      const l = document.createElement('div');
+      l.textContent = name;
+      l.style.setProperty('--c', pColor(i));
+      l.className = i === state.current ? 'lbl cur' : 'lbl';
+      pl.appendChild(l);
+    });
+
+    // statystyki
+    const counts = Object.fromEntries(nums.map(n => [n, 0]));
+    dice.forEach(r => counts[r.n]++);
+    const total = dice.length;
+    const max = Math.max(1, ...Object.values(counts));
+    [...$('stats').rows].forEach((tr, i) => {
+      const n = nums[i], c = counts[n];
+      tr.cells[1].textContent = c;
+      const bar = tr.cells[2].firstChild;
+      bar.style.width = (c / max * 100) + '%';
+      bar.style.borderWidth = c ? '1px' : '0';
+      bar.className = 'bar' + (isHot(n) ? ' hot' : '');
+      tr.cells[3].textContent = (total ? Math.round(c / total * 100) : 0) + '%';
+    });
+
+    renderGameStats(dice);
+
+    // historia (najnowsze na górze)
+    const body = $('history').tBodies[0];
+    body.textContent = '';
+    for (let i = state.rolls.length - 1; i >= 0; i--) {
+      const r = state.rolls[i];
+      const tr = body.insertRow();
+      tr.insertCell().textContent = i + 1;
+      const pc = tr.insertCell();
+      pc.textContent = state.names[r.p];
+      pc.className = 'pl';
+      pc.style.setProperty('--c', pColor(r.p));
+      const v = tr.insertCell();
+      v.textContent = r.n;
+      tr.cells[0].className = 'i';
+      v.className = 'v' + (isHot(r.n) ? ' hot' : '');
+      const t = tr.insertCell();
+      t.className = 't';
+      if (r.n === 7 || r.n === 'R') t.textContent = r.t >= 0 ? '→ ' + state.names[r.t] : '—';
+    }
+  }
+  // ---- menu i motyw ----
+  const THEMES = { catan: 'Catan', modern: 'Nowoczesny', ocean: 'Morze', forest: 'Las', desert: 'Pustynia', neon: 'Neon', poker: 'Poker', billiard: 'Bilard' };
+  const getTheme = () => document.documentElement.dataset.theme;
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('catan-noter-theme', t); } catch (e) {}
+    renderThemes();
+  }
+  function renderThemes() {
+    $('themeCur').textContent = THEMES[getTheme()] + ' ▾';
+    const list = $('themeList');
+    list.textContent = '';
+    Object.entries(THEMES).forEach(([key, name]) => {
+      const b = document.createElement('button');
+      b.textContent = name;
+      if (key === getTheme()) b.className = 'sel';
+      b.onclick = () => setTheme(key);
+      list.appendChild(b);
+    });
+  }
+  function menu(open) {
+    $('drawer').classList.toggle('open', open);
+    $('scrim').hidden = !open;
+    if (!open) $('themeList').hidden = true;
+  }
+  $('statsBtn').onclick = () => { menu(false); renderAllStats(); $('statsModal').hidden = false; };
+  $('statsClose').onclick = () => { $('statsModal').hidden = true; };
+  $('burger').onclick = () => menu(true);
+  $('scrim').onclick = () => menu(false);
+  // wymusza pobranie nowej wersji z pominięciem cache (dane gry zostają w localStorage)
+  $('refreshBtn').onclick = () => location.replace(location.pathname + '?r=' + Date.now());
+  $('themeBtn').onclick = () => { $('themeList').hidden = !$('themeList').hidden; };
+  renderThemes();
+
+  render();
+  $('ver').textContent = 'v ' + BUILD;
+
+  // samoaktualizacja: jeśli Safari trzyma starą wersję w cache, wczytaj nową (inny adres omija cache)
+  if (BUILD !== 'dev') {
+    fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.text() : '')
+      .then(v => {
+        v = v.trim();
+        if (v && v !== BUILD && location.search !== '?v=' + v) location.replace(location.pathname + '?v=' + v);
+      })
+      .catch(() => {});
+  }
+</script>
+</body>
+</html>

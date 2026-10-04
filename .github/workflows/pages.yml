@@ -14,10 +14,6 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
-env:
-  # gałąź z wersją korzystającą z Cosmos DB; publikowana pod /db/
-  DB_BRANCH: claude/iphone-html-js-app-7ueqkj
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,31 +22,21 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout DB version
-        uses: actions/checkout@v4
-        continue-on-error: true
-        with:
-          ref: ${{ env.DB_BRANCH }}
-          path: _db
-      - name: Stamp build versions and assemble site
+      - name: Stamp build version and assemble site
         run: |
-          mkdir -p site
-          # strona główna (main)
           V=${GITHUB_SHA::7}
-          sed -i "s/const BUILD = 'dev'/const BUILD = '$V'/" index.html
-          sed -i "s/?v=dev/?v=$V/g" index.html
-          cp index.html site/
+          for f in index.html no-db/index.html; do
+            sed -i "s/const BUILD = 'dev'/const BUILD = '$V'/; s/?v=dev/?v=$V/g" "$f"
+          done
+          mkdir -p site/no-db site/db
+          # strona główna: wersja z bazą Cosmos DB
+          cp index.html cosmos.js cosmos-config.js site/
           echo "$V" > site/version.txt
-          # wersja z bazą Cosmos DB w /db/ (jeśli gałąź istnieje)
-          if [ -f _db/index.html ]; then
-            D=$(git -C _db rev-parse --short HEAD)
-            sed -i "s/const BUILD = 'dev'/const BUILD = '$D'/" _db/index.html
-            sed -i "s/?v=dev/?v=$D/g" _db/index.html
-            mkdir -p site/db
-            cp _db/index.html site/db/
-            for f in cosmos.js cosmos-config.js; do [ -f "_db/$f" ] && cp "_db/$f" site/db/; done
-            echo "$D" > site/db/version.txt
-          fi
+          # wersja bez bazy (localStorage) pod /no-db/
+          cp no-db/index.html site/no-db/
+          echo "$V" > site/no-db/version.txt
+          # dawny adres /db/ przekierowuje na stronę główną
+          printf '%s\n' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=../"><script>location.replace("../")</script>' > site/db/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
