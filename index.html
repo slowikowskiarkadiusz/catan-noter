@@ -760,7 +760,7 @@
     $('pad').appendChild(b);
   });
 
-  // po zapisaniu rzutu kością blokada przycisków na 2 s (ochrona przed podwójnym stuknięciem)
+  // po zapisaniu rzutu kością blokada przycisków na 1 s (ochrona przed podwójnym stuknięciem)
   let padLocked = false, lockTimer = null;
   function lockPad(ms) {
     padLocked = true;
@@ -770,7 +770,7 @@
   }
 
   function addRoll(n, t, p = state.current) {
-    if (n !== 'R') lockPad(2000);
+    if (n !== 'R') lockPad(1000);
     state.rolls.push({ p, n, t, ts: Date.now() });
     if (n === 'R') { ensureBuild(); setCount(p, 3, state.counts[p][3] + 1); }   // zagrany rycerz zwiększa licznik rycerzy
     if (n !== 'R') state.current = (state.current + 1) % state.names.length;  // rycerz nie kończy kolejki rzutów
