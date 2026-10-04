@@ -201,9 +201,9 @@
   .modal .box.wide #allStats h3 { text-align: left; font: 800 15px var(--head); letter-spacing: .5px; margin: 16px 0 6px; }
   .modal .box.wide #allStats h3:first-child { margin-top: 4px; }
   .tabs { display: flex; gap: 6px; margin-top: 16px; }
-  .tabs button { flex: 1; padding: 10px 4px; font: inherit; font-size: 16px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
+  .tabs button { flex: 1; padding: 10px 2px; font: inherit; font-size: 14px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
   .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
-  .tabs + .panel { margin-top: 10px; }
+  #panelHist, #panelFreq, #panelWho { margin-top: 10px; }
   .panel h3 { margin: 14px 0 6px; font: 800 15px var(--head); letter-spacing: .5px; }
   .panel h3:first-child { margin-top: 0; }
   .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
@@ -411,16 +411,16 @@
   </header>
   <div id="players"></div>
   <div class="pad" id="pad"></div>
-  <h2 style="margin-top:20px">Ostatnie rzuty</h2>
-  <div class="panel" style="margin-top:0"><table id="history">
+  <div class="tabs" id="statTabs">
+    <button data-tab="hist" class="on">Ostatnie rzuty</button>
+    <button data-tab="freq">Rzuty</button>
+    <button data-tab="who">Kto co rzucił</button>
+  </div>
+  <div class="panel" id="panelHist"><table id="history">
     <thead><tr><th>#</th><th>Gracz</th><th>Rzut</th><th>Złodziej</th></tr></thead>
     <tbody></tbody>
   </table></div>
-  <div class="tabs" id="statTabs">
-    <button data-tab="freq" class="on">Rzuty</button>
-    <button data-tab="who">Kto co rzucił</button>
-  </div>
-  <div class="panel" id="panelFreq"><table id="stats"></table></div>
+  <div class="panel" id="panelFreq" hidden><table id="stats"></table></div>
   <div class="panel" id="panelWho" hidden><div id="whoChart"></div></div>
   <button class="btn end" id="end">KONIEC</button>
   <h2 style="margin-top:24px">Wygrane</h2>
@@ -939,7 +939,7 @@
     touch();
   }
 
-  let statTab = 'freq';
+  let statTab = 'hist';
   document.querySelectorAll('#statTabs button').forEach(b => {
     b.onclick = () => { statTab = b.dataset.tab; render(); };
   });
@@ -973,6 +973,7 @@
 
   function renderGameStats(dice) {
     document.querySelectorAll('#statTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === statTab));
+    $('panelHist').hidden = statTab !== 'hist';
     $('panelFreq').hidden = statTab !== 'freq';
     $('panelWho').hidden = statTab !== 'who';
     if (statTab === 'who') {
