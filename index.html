@@ -194,6 +194,10 @@
 
 
   /* taby, wykresy słupkowe */
+  .modal .box.wide { max-width: 420px; max-height: 88vh; overflow-y: auto; text-align: left; }
+  .modal .box.wide h3 { text-align: center; }
+  .modal .box.wide #allStats h3 { text-align: left; font: 800 15px var(--head); letter-spacing: .5px; margin: 16px 0 6px; }
+  .modal .box.wide #allStats h3:first-child { margin-top: 4px; }
   .tabs { display: flex; gap: 6px; margin-top: 16px; }
   .tabs button { flex: 1; padding: 10px 4px; font: inherit; font-size: 16px; background: var(--wood2); color: var(--soft); border: 2px solid var(--edge); border-radius: 8px; }
   .tabs button.on { background: var(--parch); color: var(--ink); font-weight: bold; box-shadow: 0 0 0 2px var(--gold); }
@@ -319,6 +323,7 @@
 <div id="scrim" hidden></div>
 <nav id="drawer">
   <h2>Menu</h2>
+  <button class="btn" id="statsBtn" style="width:100%;text-align:left;margin-bottom:10px">Statystyki</button>
   <button class="btn" id="themeBtn"><span>Motyw</span><span id="themeCur"></span></button>
   <div id="themeList" hidden></div>
   <button class="btn" id="refreshBtn" style="width:100%;text-align:left;margin-top:10px">Wczytaj najnowszą wersję</button>
@@ -338,8 +343,6 @@
   <button class="btn primary" id="start">Start</button>
   <h2 style="margin-top:24px">Wygrane</h2>
   <div class="panel" style="margin-top:0"><table class="wins"></table></div>
-  <h2 style="margin-top:24px">Statystyki wszystkich gier</h2>
-  <div class="panel" style="margin-top:0" id="allStats"></div>
 </section>
 
 <section id="game" hidden>
@@ -370,6 +373,16 @@
     <div class="note">Czas liczy się od rzutu gracza do rzutu następnego. Ostatni ruch w grze się nie liczy.</div>
   </div>
 </section>
+
+<div id="statsModal" class="modal" hidden>
+  <div class="box wide">
+    <h3>Statystyki wszystkich gier</h3>
+    <div id="allStats"></div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn primary" id="statsClose" style="margin:0">Zamknij</button>
+    </div>
+  </div>
+</div>
 
 <div id="knightModal" class="modal" hidden>
   <div class="box">
@@ -857,7 +870,6 @@
     $('setup').hidden = !!state;
     $('game').hidden = !state;
     renderWins();
-    renderAllStats();
     if (!state) return;
 
     const dice = state.rolls.filter(r => r.n !== 'R');
@@ -937,6 +949,8 @@
     $('scrim').hidden = !open;
     if (!open) $('themeList').hidden = true;
   }
+  $('statsBtn').onclick = () => { menu(false); renderAllStats(); $('statsModal').hidden = false; };
+  $('statsClose').onclick = () => { $('statsModal').hidden = true; };
   $('burger').onclick = () => menu(true);
   $('scrim').onclick = () => menu(false);
   // wymusza pobranie nowej wersji z pominięciem cache (dane gry zostają w localStorage)
