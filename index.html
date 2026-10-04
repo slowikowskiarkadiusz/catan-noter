@@ -485,8 +485,9 @@
 <script src="cosmos.js?v=dev"></script>
 <script>
   const BUILD = 'dev';  // podmieniane przez workflow na hash commita
-  // Dane (gra, wygrane, statystyki, ustawienia startowe) są w dokumencie konta w Cosmos DB, nie w localStorage.
-  // W localStorage zostają tylko: motyw, hash klucza konta (żeby nie logować się przy każdym otwarciu) i connection string.
+  // Przebieg trwającej gry i ustawienia startowe są w localStorage (osobno dla każdego konta, na tym urządzeniu).
+  // Baza (Cosmos DB) jest aktualizowana dopiero po zakończeniu gry: wygrane, statystyki i ostatnie ustawienia.
+  // Poza tym w localStorage: motyw, hash klucza konta i connection string.
   const AUTH_KEY = 'catan-noter-acc';
   const CONN_KEY = 'catan-noter-conn';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
@@ -530,6 +531,7 @@
     clearTimeout(saveTimer);
     if (saving || !dirty || !acct || !client) return;
     saving = true; dirty = false;
+    lsSet('pending', acct);   // kopia na wypadek zamknięcia aplikacji przed udanym zapisem
     setSync('saving');
     let failed = false;
     try {
@@ -553,7 +555,7 @@
       saving = false;
     }
     if (!failed) {
-      if (dirty) { setSync('pending'); saveTimer = setTimeout(flush, 300); } else setSync('ok');
+      if (dirty) { setSync('pending'); saveTimer = setTimeout(flush, 300); } else { lsSet('pending', null); setSync('ok'); }
     }
   }
   // czeka na zapis wszystkich zmian (np. przed wylogowaniem), maks. kilka sekund
@@ -564,7 +566,12 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && dirty) flush(); });
   addEventListener('pagehide', () => { if (dirty) flush(); });
 
-  function save() { if (!acct) return; acct.game = state; touch(); }
+  const lsKey = name => 'catan-noter-' + name + ':' + (acct ? acct.id : '');
+  const lsGet = name => { try { return JSON.parse(localStorage.getItem(lsKey(name))); } catch (e) { return null; } };
+  const lsSet = (name, val) => { try { if (val == null) localStorage.removeItem(lsKey(name)); else localStorage.setItem(lsKey(name), JSON.stringify(val)); } catch (e) {} };
+
+  // trwająca gra: tylko lokalnie, bez zapisu do bazy
+  function save() { if (acct) lsSet('game', state); }
   function saveWins() { if (!acct) return; acct.wins = wins; capObject(acct.wins, 40, n => acct.wins[n]); touch(); }
   // dokument ma zostać mały: przy bardzo wielu imionach zostają te z największymi wartościami
   function capObject(obj, max, score) {
@@ -656,7 +663,7 @@
     saveSetup(); renderSetup();
   };
 
-  // ustawienia startowe (gracze, kolory, pierwszy gracz, numer gry) zapisywane w koncie, żeby nie znikały po odświeżeniu
+  // ustawienia startowe (gracze, kolory, pierwszy gracz, numer gry) zapamiętywane lokalnie, żeby nie znikały po odświeżeniu
   function saveSetup() {
     if (!acct) return;
     acct.setup = {
@@ -665,7 +672,7 @@
       first: sp.first,
       game: +document.querySelector('input[name=game]:checked').value,
     };
-    touch();
+    lsSet('setup', acct.setup);   // do bazy trafi razem z wynikiem zakończonej gry
   }
   function applySetup(d) {
     if (!d) return;
@@ -844,6 +851,7 @@
     openColor = -1;
     renderSetup();
     saveSetup();
+    acct.game = null;   // gra skończona: zapis do bazy poleci razem ze statystykami i wygranymi
     state = null;
     save(); render();
   };
@@ -1111,18 +1119,25 @@
 
   function adopt(doc) {
     acct = doc;
+    // niezapisane zmiany z poprzedniej sesji (np. koniec gry bez sieci) wysyłamy teraz; ostatni zapis wygrywa
+    const pending = lsGet('pending');
+    const resend = !!(pending && pending.id === doc.id);
+    if (resend) acct = { ...pending, _etag: doc._etag };
     acct.wins = acct.wins || {};
     acct.stats = acct.stats || { games: 0, players: {} };
-    state = validGame(acct.game);
+    // trwająca gra i ustawienia: lokalne; gdy ich brak, bierzemy to, co jest w koncie (np. po aktualizacji aplikacji)
+    state = validGame(lsGet('game')) || validGame(acct.game);
+    if (state) lsSet('game', state);
     wins = acct.wins;
-    applySetup(acct.setup);
+    applySetup(lsGet('setup') || acct.setup);
     dirty = false;
-    setSync('ok');
+    setSync('');
     $('acctInfo').textContent = 'Konto #' + acct.number;
     $('acctInfo').hidden = false;
     $('logoutBtn').hidden = false;
     $('statsBtn').hidden = false;
     render();
+    if (resend) touch();
   }
 
   function showLogin(msg, retry) {

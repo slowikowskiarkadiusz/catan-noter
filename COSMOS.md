@@ -18,3 +18,9 @@ Opcja 2: zostaw ją pustą. Wtedy na ekranie logowania, w sekcji „Połączenie
 
 ## Hasło admina
 Przy pierwszym zakładaniu konta, gdy w bazie nie ma jeszcze hasła admina, aplikacja zapyta, czy wpisane hasło ustawić jako hasło admina. Potem każde nowe konto wymaga tego hasła.
+
+## Co trafia do bazy, a co zostaje lokalnie
+- **Lokalnie (localStorage, osobno dla każdego konta na urządzeniu):** przebieg trwającej gry i ustawienia startowe. Trwająca gra nie jest widoczna na innych urządzeniach.
+- **Do bazy, po zakończeniu gry (KONIEC):** wygrane, zbiorcze statystyki (sumy rzutów na gracza, sumy czasów ruchów) i ostatnie ustawienia startowe. Surowa historia zakończonych gier nie jest przechowywana.
+- Jeśli zapis do bazy się nie uda (brak sieci), zmiany czekają lokalnie i są wysyłane przy następnym otwarciu aplikacji.
+
