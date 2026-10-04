@@ -1,9 +1,14 @@
 // Konfiguracja połączenia z Azure Cosmos DB (NoSQL API).
 //
-// connectionString: zostaw PUSTY. Ten plik jest publiczny (GitHub Pages), a klucz z connection stringa daje pełny dostęp
-// do bazy. Bez wpisu tutaj aplikacja poprosi o connection string na ekranie logowania i zapisze go tylko na tym urządzeniu.
+// Tu wpisz connection string, w cudzysłowie, w jednej linii:
+//   AccountEndpoint=https://...documents.azure.com:443/;AccountKey=...;
+// UWAGA: ten plik jest publiczny (repo i GitHub Pages), więc każdy, kto go zobaczy, ma pełny dostęp do konta Cosmos DB.
+// Po zregenerowaniu klucza w Azure trzeba tu wpisać nowy. Zostaw '' (puste), żeby aplikacja pytała o connection string
+// na ekranie logowania i zapisywała go tylko na danym urządzeniu.
+const COSMOS_CONNECTION_STRING = '';
+
 window.COSMOS_CONFIG = {
-  connectionString: '',
+  connectionString: COSMOS_CONNECTION_STRING,
   database: '',                  // puste = aplikacja sama znajdzie bazę, w której jest kontener "container"
   container: 'catan',            // konta i statystyki, klucz partycji np. /accountid
   settingsContainer: 'settings', // hasło admina (hash) i licznik numerów kont, klucz partycji /id

@@ -11,8 +11,8 @@ Aplikacja łączy się z Cosmos DB (NoSQL API) bezpośrednio z przeglądarki, be
 2. Uwaga na koszty: nowy kontener w bazie bez współdzielonej przepustowości dostaje domyślnie własną przepustowość (zwykle min. 400 RU/s). Na koncie serverless albo w bazie ze współdzieloną przepustowością nie ma dodatkowego kosztu. Jeśli wolisz, załóż kontener `settings` ręcznie (klucz partycji `/id`) i ustaw przepustowość sam.
 
 ## Connection string
-- **Nie wpisuj go do `cosmos-config.js` ani nigdzie w repo.** Strona jest publiczna, a klucz daje pełny dostęp do konta Cosmos.
-- Na ekranie logowania, w sekcji „Połączenie z bazą”, wklej connection string. Zapisuje się tylko w localStorage tego urządzenia.
+Opcja 1: stała `COSMOS_CONNECTION_STRING` na górze pliku `cosmos-config.js` (wpisany na stałe; plik jest publiczny, więc klucz też, i po zregenerowaniu klucza trzeba go podmienić).
+Opcja 2: zostaw ją pustą. Wtedy na ekranie logowania, w sekcji „Połączenie z bazą”, wklejasz connection string, a on zapisuje się tylko na tym urządzeniu.
 
 ## Hasło admina
 Przy pierwszym zakładaniu konta, gdy w bazie nie ma jeszcze hasła admina, aplikacja zapyta, czy wpisane hasło ustawić jako hasło admina. Potem każde nowe konto wymaga tego hasła.
