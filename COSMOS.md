@@ -2,19 +2,17 @@
 
 Aplikacja łączy się z Cosmos DB (NoSQL API) bezpośrednio z przeglądarki, bez backendu.
 
-## Co założyć w Azure
-1. Konto Cosmos DB, API: **NoSQL**.
-2. Baza `catan` i kontener `accounts` z kluczem partycji **`/id`** (nazwy można zmienić w `cosmos-config.js`).
-3. W koncie: **Settings → CORS**, dodać `https://slowikowskiarkadiusz.github.io` (do testów lokalnych dodatkowo adres, z którego otwierasz stronę).
+## Układ danych
+- Kontener **`catan`** (klucz partycji np. `/accountid`): jeden dokument na konto. `id` i `accountid` to hash SHA-256 z `"catan-noter:" + klucz konta` (sam klucz nie jest zapisywany). Aplikacja sama wykrywa nazwę bazy i pole klucza partycji.
+- Kontener **`settings`** (klucz partycji `/id`), tworzony przez aplikację przy ustawianiu hasła admina: dokument `admin` (hash PBKDF2-SHA256 z solą) i dokument `counter` (numer następnego konta).
+
+## Co zrobić w Azure
+1. W koncie Cosmos: **Settings → CORS**, dodać `https://slowikowskiarkadiusz.github.io`.
+2. Uwaga na koszty: nowy kontener w bazie bez współdzielonej przepustowości dostaje domyślnie własną przepustowość (zwykle min. 400 RU/s). Na koncie serverless albo w bazie ze współdzieloną przepustowością nie ma dodatkowego kosztu. Jeśli wolisz, załóż kontener `settings` ręcznie (klucz partycji `/id`) i ustaw przepustowość sam.
 
 ## Connection string
-- **Nie wpisuj go do `cosmos-config.js` ani nigdzie w repo.** Strona jest publiczna, a klucz z connection stringa daje pełny dostęp do całego konta Cosmos (odczyt, zapis, usuwanie, koszty).
-- Zostaw `connectionString: ''`. Na ekranie logowania, w sekcji „Połączenie z bazą”, wklej connection string. Zapisuje się tylko w localStorage tego urządzenia.
+- **Nie wpisuj go do `cosmos-config.js` ani nigdzie w repo.** Strona jest publiczna, a klucz daje pełny dostęp do konta Cosmos.
+- Na ekranie logowania, w sekcji „Połączenie z bazą”, wklej connection string. Zapisuje się tylko w localStorage tego urządzenia.
 
-## Konta
-- Każde konto to jeden dokument w kontenerze. `id` = SHA-256 z `"catan-noter:" + klucz konta` (sam klucz nie jest zapisywany).
-- Numer konta pochodzi z licznika w dokumencie `meta`.
-- Nowe konto wymaga klucza admina. Ustaw w `cosmos-config.js` pole `adminKeyHash` (SHA-256 hex klucza admina: `echo -n 'klucz' | shasum -a 256`). Puste = bez sprawdzania.
-
-## Co jest w dokumencie konta
-Ustawienia startowe, bieżąca gra (rzuty z czasami), wygrane i zbiorcze statystyki (sumy rzutów na gracza, sumy czasów ruchów). Surowa historia zakończonych gier nie jest przechowywana.
+## Hasło admina
+Przy pierwszym zakładaniu konta, gdy w bazie nie ma jeszcze hasła admina, aplikacja zapyta, czy wpisane hasło ustawić jako hasło admina. Potem każde nowe konto wymaga tego hasła.
