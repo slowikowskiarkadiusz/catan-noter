@@ -1076,12 +1076,24 @@
     if (!state.log) state.log = [];
   }
   // zmiana licznika; zapisujemy ją z numerem rzutu kością, przy którym nastąpiła (oś X wykresu)
-  function bump(p, k, d) {
-    ensureBuild();
-    const v = Math.max(0, state.counts[p][k] + d);
-    if (v === state.counts[p][k]) return;
+  function setCount(p, k, v) {
     state.counts[p][k] = v;
     state.log.push({ x: diceCount(), p, k, v });
+  }
+  function bump(p, k, d) {
+    ensureBuild();
+    const c = state.counts[p];
+    if (k === 2) {
+      // miasto powstaje ze wsi: + miasto odejmuje wieś (bez wsi nie można), − miasto przywraca wieś
+      if (d > 0 && c[1] <= 0) return;
+      if (d < 0 && c[2] <= 0) return;
+      setCount(p, 1, c[1] - d);
+      setCount(p, 2, c[2] + d);
+    } else {
+      const v = Math.max(0, c[k] + d);
+      if (v === c[k]) return;
+      setCount(p, k, v);
+    }
     save(); render();
   }
   // punkty po każdym rzucie kością (0..N), odtwarzane z dziennika zmian
@@ -1138,6 +1150,7 @@
         const cell = el('div', 'bv r2');
         const plus = el('button', 'bcb', '+');
         plus.setAttribute('aria-label', `${name}: ${label} plus`);
+        plus.disabled = k === 2 && state.counts[p][1] <= 0;   // miasto wymaga wsi
         plus.onclick = () => bump(p, k, 1);
         const minus = el('button', 'bcb', '−');
         minus.setAttribute('aria-label', `${name}: ${label} minus`);
