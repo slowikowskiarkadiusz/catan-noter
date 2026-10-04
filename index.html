@@ -276,27 +276,27 @@
   .slide-l { animation: slidel .22s ease-out; }
   .slide-r { animation: slider .22s ease-out; }
 
-  /* budowle i wykres punktów */
-  .bp { padding: 8px 0 12px; border-bottom: 1px solid var(--rule); }
-  .bp:last-child { border-bottom: 0; }
-  .bph { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .bpn { font-weight: bold; font-size: 18px; }
-  .bpn::before { content: ''; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; border: 1px solid #000; background: var(--c); }
-  .bpp { font-weight: 800; font-family: var(--head); }
-  .tags { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 8px; }
-  .tags b { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 8px; background: var(--gold); color: #1b1b1b; white-space: nowrap; }
-  .bpg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
-  .bcl { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
-  .bcc { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-  .bcv { flex: 1; text-align: center; font: 800 22px var(--head); }
-  .bcb { width: 38px; height: 38px; flex: none; padding: 0; border-radius: 10px; border: 2px solid var(--edge); background: var(--wood2); color: var(--btnText); font-size: 22px; line-height: 1; }
+  /* budowle i wykres punktów: jeden wiersz na gracza, etykiety kolumn pionowo, + nad liczbą, − pod nią */
+  .bt { display: grid; grid-template-columns: 66px repeat(5, 1fr); gap: 0 2px; align-items: stretch; }
+  .blab { display: flex; justify-content: center; align-items: flex-end; padding-bottom: 4px; }
+  .blab span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 13px; font-weight: bold; color: var(--muted); }
+  .bt .r2 { border-top: 1px solid var(--rule); padding: 8px 0; }
+  .bn { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 2px; min-width: 0; padding-right: 4px; }
+  .bnn { font-weight: bold; font-size: 15px; line-height: 1.1; max-width: 100%; overflow-wrap: anywhere; }
+  .bnn::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; background: var(--c); }
+  .bpp { font-weight: 800; font-family: var(--head); font-size: 14px; }
+  .tags { display: flex; flex-direction: column; gap: 2px; }
+  .tags b { font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 8px; background: var(--gold); color: #1b1b1b; white-space: nowrap; }
+  .bv { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
+  .bcv { font: 800 22px var(--head); line-height: 1.2; }
+  .bcb { width: 100%; max-width: 46px; height: 34px; padding: 0; border-radius: 10px; border: 2px solid var(--edge); background: var(--wood2); color: var(--btnText); font-size: 22px; line-height: 1; }
   .bcb:active { transform: translateY(1px); }
   .bcb:disabled { opacity: .3; }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 14px; }
   .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1px solid #000; margin-right: 5px; vertical-align: -1px; }
   #ptsChart svg { width: 100%; height: auto; display: block; overflow: visible; }
   #ptsChart text { fill: currentColor; font: 10px var(--bodyf); opacity: .75; }
-  html[data-theme="modern"] .bcl { color: #999; }
+  html[data-theme="modern"] .blab span { color: #999; }
   html[data-theme="modern"] .bcb { background: #2a2a2a; color: #eee; border: 0; }
 
   /* dodatkowe motywy: same zmienne */
@@ -1114,33 +1114,33 @@
     const box = $('buildBox');
     box.textContent = '';
     const { final: pts, road, army } = pointSeries();
+    const grid = el('div', 'bt');
+    grid.append(el('div'));
+    KINDS.forEach(label => { const c = el('div', 'blab'); c.append(el('span', '', label)); grid.append(c); });
     state.names.forEach((name, p) => {
-      const blk = el('div', 'bp');
-      const head = el('div', 'bph');
-      const nm = el('span', 'bpn', name);
+      const nc = el('div', 'bn r2');
+      const nm = el('div', 'bnn', name);
       nm.style.setProperty('--c', pColor(p));
-      const tags = el('span', 'tags');
-      if (road === p) tags.append(el('b', '', 'Najdłuższa droga'));
-      if (army === p) tags.append(el('b', '', 'Największa armia'));
-      head.append(nm, tags, el('span', 'bpp', pts[p] + ' pkt'));
-      const grid = el('div', 'bpg');
+      nc.append(nm, el('div', 'bpp', pts[p] + ' pkt'));
+      const tags = el('div', 'tags');
+      if (road === p) tags.append(el('b', '', 'Droga +2'));
+      if (army === p) tags.append(el('b', '', 'Armia +2'));
+      nc.append(tags);
+      grid.append(nc);
       KINDS.forEach((label, k) => {
-        const cell = el('div', 'bc');
-        const ctl = el('div', 'bcc');
+        const cell = el('div', 'bv r2');
+        const plus = el('button', 'bcb', '+');
+        plus.setAttribute('aria-label', `${name}: ${label} plus`);
+        plus.onclick = () => bump(p, k, 1);
         const minus = el('button', 'bcb', '−');
-        minus.setAttribute('aria-label', label + ' minus');
+        minus.setAttribute('aria-label', `${name}: ${label} minus`);
         minus.disabled = state.counts[p][k] <= 0;
         minus.onclick = () => bump(p, k, -1);
-        const plus = el('button', 'bcb', '+');
-        plus.setAttribute('aria-label', label + ' plus');
-        plus.onclick = () => bump(p, k, 1);
-        ctl.append(minus, el('span', 'bcv', state.counts[p][k]), plus);
-        cell.append(el('div', 'bcl', label), ctl);
+        cell.append(plus, el('span', 'bcv', state.counts[p][k]), minus);
         grid.append(cell);
       });
-      blk.append(head, grid);
-      box.append(blk);
     });
+    box.append(grid);
   }
 
   // wykres liniowy (schodkowy): punkty graczy w funkcji liczby rzutów kością
