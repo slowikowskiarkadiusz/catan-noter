@@ -234,6 +234,38 @@
   html[data-theme="modern"] .pd .col.peak .v { color: #eee; }
   html[data-theme="modern"] .pd .bar2 { border: 0; border-radius: 2px 2px 0 0; }
 
+
+  /* logowanie, ładowanie, status zapisu */
+  #topbar { display: flex; align-items: center; gap: 10px; }
+  #acctBadge { font-size: 13px; font-weight: bold; color: var(--soft); }
+  #sync { margin-left: auto; font-size: 12px; color: var(--soft); display: flex; align-items: center; gap: 6px; }
+  #sync::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #888; display: inline-block; }
+  #sync[data-s="ok"]::before { background: #3fae5a; }
+  #sync[data-s="pending"]::before { background: #d9a441; }
+  #sync[data-s="error"]::before { background: #e5483f; }
+  #sync[data-s="saving"]::before { background: none; border: 2px solid var(--soft); border-top-color: transparent; width: 8px; height: 8px; animation: spin .7s linear infinite; }
+  #sync[data-s=""] { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.72); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; animation: fadein .2s; }
+  .spin { width: 46px; height: 46px; border-radius: 50%; border: 5px solid rgba(255,255,255,.25); border-top-color: var(--gold); animation: spin .8s linear infinite; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .btn.busy { position: relative; color: transparent !important; pointer-events: none; }
+  .btn.busy::after { content: ''; position: absolute; inset: 0; margin: auto; width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .7s linear infinite; }
+  .skel { height: 16px; border-radius: 8px; margin: 12px 0; background: linear-gradient(90deg, var(--rule) 25%, var(--parch2) 50%, var(--rule) 75%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  #login input, #login textarea { width: 100%; padding: 12px; margin-bottom: 8px; font: inherit; font-size: 18px; background: var(--parch2); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; }
+  #login textarea { font-size: 14px; min-height: 84px; }
+  #login .msg { margin: 10px 0; padding: 10px 12px; border-radius: 8px; background: var(--danger); color: #fff; }
+  #login .msg.ok { background: var(--green); color: var(--onAccent); }
+  #login .row { display: flex; gap: 8px; }
+  #login .row .btn { flex: 1; padding: 12px 6px; }
+  #login details { margin-top: 18px; color: var(--soft); }
+  #login summary { cursor: pointer; padding: 6px 0; }
+  .acctInfo { margin: -6px 0 14px; font-weight: bold; color: var(--gold); }
+  html[data-theme="modern"] #login input, html[data-theme="modern"] #login textarea { background: #222; color: #eee; border: 1px solid #444; }
+  html[data-theme="modern"] .acctInfo { color: #999; }
+  html[data-theme="modern"] .skel { background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%); background-size: 200% 100%; }
+
   /* dodatkowe motywy: same zmienne */
   html[data-theme="ocean"] {
     --wood: #0d2b3e; --wood2: #14425c; --parch: #e2f3f6; --parch2: #c3e3ea; --ink: #0d2b3e;
@@ -319,17 +351,40 @@
 </head>
 <body>
 
-<div id="topbar"><button id="burger" aria-label="Menu">☰</button></div>
+<div id="topbar"><button id="burger" aria-label="Menu">☰</button><span id="acctBadge"></span><span id="sync" data-s=""></span></div>
 <div id="scrim" hidden></div>
 <nav id="drawer">
   <h2>Menu</h2>
+  <div class="acctInfo" id="acctInfo" hidden></div>
   <button class="btn" id="statsBtn" style="width:100%;text-align:left;margin-bottom:10px">Statystyki</button>
   <button class="btn" id="themeBtn"><span>Motyw</span><span id="themeCur"></span></button>
   <div id="themeList" hidden></div>
   <button class="btn" id="refreshBtn" style="width:100%;text-align:left;margin-top:10px">Wczytaj najnowszą wersję</button>
+  <button class="btn danger" id="logoutBtn" style="width:100%;text-align:left;margin-top:10px" hidden>Wyloguj</button>
 </nav>
 
-<section id="setup">
+<section id="login" hidden>
+  <h1>CATAN</h1>
+  <div class="subtitle" style="text-align:center;color:var(--soft)">rzuty kością</div>
+  <h2>Klucz konta</h2>
+  <input id="keyInput" type="password" placeholder="Klucz konta" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <div id="loginMsg" class="msg" hidden></div>
+  <button class="btn primary" id="loginBtn">Zaloguj</button>
+  <button class="btn" id="retryBtn" style="width:100%;margin-top:8px" hidden>Spróbuj ponownie</button>
+  <details id="newAccBox">
+    <summary>Nowe konto</summary>
+    <input id="adminKey" type="password" placeholder="Klucz admina" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="btn" id="createBtn" style="width:100%">Utwórz konto z podanym kluczem</button>
+    <div class="note" style="color:var(--soft)">Klucz konta wpisz wyżej (min. 6 znaków).</div>
+  </details>
+  <details id="connBox">
+    <summary>Połączenie z bazą</summary>
+    <textarea id="connInput" placeholder="AccountEndpoint=https://...documents.azure.com:443/;AccountKey=...;" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+    <button class="btn" id="connSave" style="width:100%">Zapisz na tym urządzeniu</button>
+  </details>
+</section>
+
+<section id="setup" hidden>
   <h1>CATAN</h1>
   <div class="subtitle" style="text-align:center;color:var(--soft)">rzuty kością</div>
   <h2>Gracze <small>(kółko = pierwszy rzuca)</small></h2>
@@ -384,6 +439,8 @@
   </div>
 </div>
 
+<div id="loading" hidden><div class="spin"></div><div id="loadingText">Wczytywanie…</div></div>
+
 <div id="knightModal" class="modal" hidden>
   <div class="box">
     <div class="icon">♞</div>
@@ -421,12 +478,14 @@
   </div>
 </div>
 
+<script src="cosmos-config.js?v=dev"></script>
+<script src="cosmos.js?v=dev"></script>
 <script>
   const BUILD = 'dev';  // podmieniane przez workflow na hash commita
-  const KEY = 'catan-noter-state';
-  const WINS_KEY = 'catan-noter-wins';
-  const SETUP_KEY = 'catan-noter-setup';
-  const STATS_KEY = 'catan-noter-stats';
+  // Dane (gra, wygrane, statystyki, ustawienia startowe) są w dokumencie konta w Cosmos DB, nie w localStorage.
+  // W localStorage zostają tylko: motyw, hash klucza konta (żeby nie logować się przy każdym otwarciu) i connection string.
+  const AUTH_KEY = 'catan-noter-acc';
+  const CONN_KEY = 'catan-noter-conn';
   const DEFAULT_NAMES = ['Arek', 'Domi', 'Mama', 'Tata'];
   const nums = [2,3,4,5,6,7,8,9,10,11,12];
   const isHot = n => n === 6 || n === 8;
@@ -446,34 +505,70 @@
   const pColor = i => (state && state.colors && state.colors[i]) || DEFAULT_COLORS[i];
 
   // state: null (ustawienia) albo { names, game, current, rolls: [{p, n}] }
-  let state = load();
+  let state = null;
+  let acct = null;        // dokument konta w pamięci
+  let client = null;      // klient Cosmos DB
+  let wins = {};          // wygrane: { imię: liczba } — „Wyczyść” ich nie rusza
 
-  function load() {
-    try {
-      const s = JSON.parse(localStorage.getItem(KEY));
-      if (s && Array.isArray(s.names) && s.names.length === 4 && Array.isArray(s.rolls)) return s;
-    } catch (e) {}
-    return null;
+  const validGame = s => (s && Array.isArray(s.names) && s.names.length === 4 && Array.isArray(s.rolls)) ? s : null;
+
+  // ---- zapis do Cosmos DB: zmiany łączone w jeden zapis ~0,5 s po ostatniej zmianie ----
+  let saveTimer = null, retryTimer = null, saving = false, dirty = false;
+  const SYNC_TEXT = { ok: 'Zapisano', pending: 'Zmiany…', saving: 'Zapisuję…', error: 'Błąd zapisu, ponawiam…', '': '' };
+  function setSync(st) { const e = $('sync'); e.dataset.s = st; e.textContent = SYNC_TEXT[st]; }
+  function touch() {
+    if (!acct) return;
+    dirty = true;
+    setSync('pending');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 500);
   }
-  function save() {
+  async function flush() {
+    clearTimeout(saveTimer);
+    if (saving || !dirty || !acct || !client) return;
+    saving = true; dirty = false;
+    setSync('saving');
+    let failed = false;
     try {
-      if (state) localStorage.setItem(KEY, JSON.stringify(state));
-      else localStorage.removeItem(KEY);
-    } catch (e) {}
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const res = await client.saveAccount(acct);
+          acct._etag = res._etag;
+          break;
+        } catch (e) {
+          // 412: dokument zmienił się w międzyczasie (inne urządzenie); bierzemy świeży ETag i zapisujemy nasze dane (ostatni zapis wygrywa)
+          if (e.status === 412 && attempt < 2) { acct._etag = (await client.getAccount(acct.id))._etag; continue; }
+          throw e;
+        }
+      }
+    } catch (e) {
+      failed = true; dirty = true;
+      setSync('error');
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(flush, 5000);
+    } finally {
+      saving = false;
+    }
+    if (!failed) {
+      if (dirty) { setSync('pending'); saveTimer = setTimeout(flush, 300); } else setSync('ok');
+    }
+  }
+  // czeka na zapis wszystkich zmian (np. przed wylogowaniem), maks. kilka sekund
+  async function settle() {
+    for (let i = 0; i < 60 && (dirty || saving); i++) { flush(); await new Promise(r => setTimeout(r, 100)); }
+  }
+  addEventListener('online', flush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && dirty) flush(); });
+
+  function save() { if (!acct) return; acct.game = state; touch(); }
+  function saveWins() { if (!acct) return; acct.wins = wins; capObject(acct.wins, 40, n => acct.wins[n]); touch(); }
+  // dokument ma zostać mały: przy bardzo wielu imionach zostają te z największymi wartościami
+  function capObject(obj, max, score) {
+    const keys = Object.keys(obj);
+    if (keys.length <= max) return;
+    keys.sort((a, b) => score(b) - score(a)).slice(max).forEach(k => delete obj[k]);
   }
 
-  // wygrane: { imię: liczba } — osobny klucz, nie jest czyszczone przez „Wyczyść”
-  let wins = loadWins();
-  function loadWins() {
-    try {
-      const w = JSON.parse(localStorage.getItem(WINS_KEY));
-      if (w && typeof w === 'object' && !Array.isArray(w)) return w;
-    } catch (e) {}
-    return {};
-  }
-  function saveWins() {
-    try { localStorage.setItem(WINS_KEY, JSON.stringify(wins)); } catch (e) {}
-  }
   function renderWins() {
     const names = new Set(Object.keys(wins));
     if (state) state.names.forEach(n => names.add(n));
@@ -539,33 +634,29 @@
   function paintDots() { dots.forEach((d, k) => { d.style.background = chosen[k]; }); }
   paintDots();
 
-  // ustawienia startowe (imiona, kolory, pierwszy gracz, numer gry) pamiętane osobno, żeby nie znikały po odświeżeniu
+  // ustawienia startowe (imiona, kolory, pierwszy gracz, numer gry) zapisywane w koncie, żeby nie znikały po odświeżeniu
   function saveSetup() {
-    try {
-      localStorage.setItem(SETUP_KEY, JSON.stringify({
-        names: nameInputs.map(i => i.value),
-        colors: chosen,
-        first: +document.querySelector('input[name=first]:checked').value,
-        game: +document.querySelector('input[name=game]:checked').value,
-      }));
-    } catch (e) {}
+    if (!acct) return;
+    acct.setup = {
+      names: nameInputs.map(i => i.value),
+      colors: chosen,
+      first: +document.querySelector('input[name=first]:checked').value,
+      game: +document.querySelector('input[name=game]:checked').value,
+    };
+    touch();
   }
-  function loadSetup() {
-    try {
-      const d = JSON.parse(localStorage.getItem(SETUP_KEY));
-      if (!d) return;
-      if (Array.isArray(d.names)) d.names.slice(0, 4).forEach((n, k) => { if (typeof n === 'string') nameInputs[k].value = n; });
-      if (Array.isArray(d.colors) && d.colors.length === 4) chosen = d.colors.map((c, k) => typeof c === 'string' ? c : DEFAULT_COLORS[k]);
-      const f = document.querySelector(`input[name=first][value="${d.first}"]`);
-      if (f) f.checked = true;
-      const g = document.querySelector(`input[name=game][value="${d.game}"]`);
-      if (g) g.checked = true;
-      paintDots();
-    } catch (e) {}
+  function applySetup(d) {
+    if (!d) return;
+    if (Array.isArray(d.names)) d.names.slice(0, 4).forEach((n, k) => { if (typeof n === 'string') nameInputs[k].value = n; });
+    if (Array.isArray(d.colors) && d.colors.length === 4) chosen = d.colors.map((c, k) => typeof c === 'string' ? c : DEFAULT_COLORS[k]);
+    const f = document.querySelector(`input[name=first][value="${d.first}"]`);
+    if (f) f.checked = true;
+    const g = document.querySelector(`input[name=game][value="${d.game}"]`);
+    if (g) g.checked = true;
+    paintDots();
   }
   $('setup').addEventListener('input', saveSetup);
   $('setup').addEventListener('change', saveSetup);
-  loadSetup();
 
   $('start').onclick = () => {
     const names = nameInputs.map((i, k) => i.value.trim() || DEFAULT_NAMES[k]);
@@ -802,13 +893,7 @@
   }
 
   // wyniki zakończonej gry dopisywane do statystyk wszystkich gier (zapisujemy tylko sumy: rzuty na gracza i czasy do średniej)
-  function loadStats() {
-    try {
-      const d = JSON.parse(localStorage.getItem(STATS_KEY));
-      if (d && d.players && typeof d.players === 'object') return d;
-    } catch (e) {}
-    return { games: 0, players: {} };
-  }
+  function loadStats() { return acct.stats; }
   function mergeGameStats(st) {
     const all = loadStats();
     all.games = (all.games || 0) + 1;
@@ -816,7 +901,8 @@
     st.names.forEach((n, i) => { P(i).color = pColor(i); });
     st.rolls.filter(r => r.n !== 'R').forEach(r => { const p = P(r.p); p.rolls[r.n] = (p.rolls[r.n] || 0) + 1; });
     moveTimes(st.rolls).forEach(m => { const p = P(m.p); p.ms += m.ms; p.moves += 1; });
-    try { localStorage.setItem(STATS_KEY, JSON.stringify(all)); } catch (e) {}
+    capObject(all.players, 40, n => all.players[n].moves + Object.values(all.players[n].rolls).reduce((a, b) => a + b, 0));
+    touch();
   }
 
   let statTab = 'freq';
@@ -826,10 +912,9 @@
 
   const plGames = n => n === 1 ? 'gra' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'gry' : 'gier';
 
-  function renderAllStats() {
+  function renderAllStats(all = loadStats()) {
     const box = $('allStats');
     box.textContent = '';
-    const all = loadStats();
     const names = Object.keys(all.players);
     if (!all.games) { box.append(el('div', '', 'Brak danych. Statystyki pojawią się po zakończeniu pierwszej gry.')); return; }
 
@@ -867,8 +952,11 @@
   }
 
   function render() {
-    $('setup').hidden = !!state;
-    $('game').hidden = !state;
+    $('login').hidden = !!acct;
+    $('setup').hidden = !acct || !!state;
+    $('game').hidden = !acct || !state;
+    $('acctBadge').textContent = acct ? 'Konto #' + acct.number : '';
+    if (!acct) return;
     renderWins();
     if (!state) return;
 
@@ -949,16 +1037,154 @@
     $('scrim').hidden = !open;
     if (!open) $('themeList').hidden = true;
   }
-  $('statsBtn').onclick = () => { menu(false); renderAllStats(); $('statsModal').hidden = false; };
+  // statystyki: pokazuje szkielet ładowania, pobiera świeży dokument konta (dane z innych urządzeń); przy błędzie pokazuje dane lokalne
+  $('statsBtn').onclick = async () => {
+    menu(false);
+    const box = $('allStats');
+    box.textContent = '';
+    for (let i = 0; i < 6; i++) box.append(el('div', 'skel'));
+    $('statsModal').hidden = false;
+    let all = loadStats();
+    if (!dirty && !saving) {
+      try { const remote = await client.getAccount(acct.id); if (remote && remote.stats) all = remote.stats; } catch (e) {}
+    }
+    if (!$('statsModal').hidden) renderAllStats(all);
+  };
   $('statsClose').onclick = () => { $('statsModal').hidden = true; };
   $('burger').onclick = () => menu(true);
   $('scrim').onclick = () => menu(false);
-  // wymusza pobranie nowej wersji z pominięciem cache (dane gry zostają w localStorage)
+  // wymusza pobranie nowej wersji z pominięciem cache (dane są w koncie, więc nic nie ginie)
   $('refreshBtn').onclick = () => location.replace(location.pathname + '?r=' + Date.now());
   $('themeBtn').onclick = () => { $('themeList').hidden = !$('themeList').hidden; };
   renderThemes();
 
-  render();
+  // ---- ładowanie i logowanie ----
+  function showLoading(text) { $('loadingText').textContent = text; $('loading').hidden = false; }
+  function hideLoading() { $('loading').hidden = true; }
+  function busy(btn, on) { btn.classList.toggle('busy', on); btn.disabled = on; }
+  function loginMessage(text, ok) {
+    const m = $('loginMsg');
+    m.hidden = !text;
+    m.textContent = text || '';
+    m.classList.toggle('ok', !!ok);
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // konfiguracja: najpierw cosmos-config.js, potem connection string zapisany na tym urządzeniu
+  function makeClient() {
+    const cfg = Object.assign({ database: '', container: 'catan' }, window.COSMOS_CONFIG || {});
+    let cs = cfg.connectionString;
+    let local = false;
+    if (!cs) { try { cs = localStorage.getItem(CONN_KEY) || ''; local = true; } catch (e) {} }
+    $('connBox').hidden = !local && !!cfg.connectionString;
+    $('connBox').open = !cs;
+    if (!cs) { client = null; return false; }
+    try { client = Cosmos.connect({ ...cfg, connectionString: cs }); return true; }
+    catch (e) { client = null; loginMessage(e.message); return false; }
+  }
+
+  function adopt(doc) {
+    acct = doc;
+    acct.wins = acct.wins || {};
+    acct.stats = acct.stats || { games: 0, players: {} };
+    state = validGame(acct.game);
+    wins = acct.wins;
+    applySetup(acct.setup);
+    dirty = false;
+    setSync('ok');
+    $('acctInfo').textContent = 'Konto #' + acct.number;
+    $('acctInfo').hidden = false;
+    $('logoutBtn').hidden = false;
+    $('statsBtn').hidden = false;
+    render();
+  }
+
+  function showLogin(msg, retry) {
+    acct = null; state = null;
+    setSync('');
+    $('acctInfo').hidden = true;
+    $('logoutBtn').hidden = true;
+    $('statsBtn').hidden = true;
+    loginMessage(msg);
+    $('retryBtn').hidden = !retry;
+    $('loginBtn').hidden = !!retry;
+    render();
+  }
+
+  async function boot() {
+    if (!makeClient()) { showLogin(client === null && $('loginMsg').hidden ? 'Najpierw podaj połączenie z bazą (na dole).' : $('loginMsg').textContent); return; }
+    let id = null;
+    try { id = localStorage.getItem(AUTH_KEY); } catch (e) {}
+    if (!id) { showLogin(); return; }
+    showLoading('Wczytywanie konta…');
+    try {
+      const doc = await client.getAccount(id);
+      if (!doc) { try { localStorage.removeItem(AUTH_KEY); } catch (e) {} showLogin('Konto nie istnieje. Zaloguj się ponownie.'); }
+      else adopt(doc);
+    } catch (e) {
+      showLogin(e.message, true);   // brak sieci: nie wylogowujemy, pozwalamy spróbować ponownie
+    } finally { hideLoading(); }
+  }
+
+  $('retryBtn').onclick = boot;
+  $('connSave').onclick = () => {
+    const v = $('connInput').value.trim();
+    try { Cosmos.parseConnectionString(v); } catch (e) { loginMessage(e.message); return; }
+    try { localStorage.setItem(CONN_KEY, v); } catch (e) {}
+    $('connInput').value = '';
+    makeClient();
+    loginMessage('Zapisano połączenie z bazą na tym urządzeniu.', true);
+  };
+
+  async function doLogin() {
+    const key = $('keyInput').value.trim();
+    if (!key) { loginMessage('Podaj klucz konta.'); return; }
+    if (!client && !makeClient()) { loginMessage('Najpierw podaj połączenie z bazą (na dole).'); return; }
+    busy($('loginBtn'), true); showLoading('Logowanie…');
+    try {
+      const id = await client.hashKey(key);
+      const doc = await client.getAccount(id);
+      if (!doc) { loginMessage('Nieprawidłowy klucz konta.'); return; }
+      try { localStorage.setItem(AUTH_KEY, id); } catch (e) {}
+      $('keyInput').value = '';
+      loginMessage('');
+      adopt(doc);
+    } catch (e) { loginMessage(e.message); }
+    finally { busy($('loginBtn'), false); hideLoading(); }
+  }
+  $('loginBtn').onclick = doLogin;
+  $('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  $('createBtn').onclick = async () => {
+    const key = $('keyInput').value.trim();
+    if (key.length < 6) { loginMessage('Klucz konta musi mieć co najmniej 6 znaków (wpisz go w polu „Klucz konta”).'); return; }
+    if (!client && !makeClient()) { loginMessage('Najpierw podaj połączenie z bazą (na dole).'); return; }
+    busy($('createBtn'), true); showLoading('Tworzenie konta…');
+    try {
+      const doc = await client.createAccount(key, $('adminKey').value, async () => {
+        hideLoading();
+        const ok = confirm('W bazie nie ma jeszcze hasła admina. Ustawić wpisane hasło jako hasło admina (zostanie zapisane jako hash)?');
+        showLoading('Tworzenie konta…');
+        return ok;
+      });
+      try { localStorage.setItem(AUTH_KEY, doc.id); } catch (e) {}
+      $('keyInput').value = ''; $('adminKey').value = '';
+      loginMessage('');
+      adopt(doc);
+    } catch (e) { loginMessage(e.message); }
+    finally { busy($('createBtn'), false); hideLoading(); }
+  };
+
+  $('logoutBtn').onclick = async () => {
+    menu(false);
+    showLoading('Zapisywanie…');
+    await settle();
+    try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+    hideLoading();
+    showLogin();
+  };
+
+  boot();
   $('ver').textContent = 'v ' + BUILD;
 
   // samoaktualizacja: jeśli Safari trzyma starą wersję w cache, wczytaj nową (inny adres omija cache)
